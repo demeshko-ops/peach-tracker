@@ -1,8 +1,3 @@
-# Тимчасова схема деплою: кожен пуш у main дзеркалиться в гілку gh-pages,
-# звідки GitHub Pages публікує сайт (джерело "Deploy from a branch").
-# Стандартний GITHUB_TOKEN не має прав перемкнути джерело Pages на
-# "GitHub Actions", тому після ручного перемикання в Settings → Pages цю
-# схему можна замінити на configure-pages / upload-pages-artifact / deploy-pages.
 name: Deploy static site to GitHub Pages
 
 on:
@@ -11,18 +6,34 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
 
 concurrency:
   group: "pages"
   cancel-in-progress: false
 
 jobs:
-  publish:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Mirror main to gh-pages
-        run: git push --force origin HEAD:gh-pages
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "."
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
