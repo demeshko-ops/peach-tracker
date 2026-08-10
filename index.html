@@ -4,28 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#FBF6F1">
+<meta name="theme-color" content="#2E3134">
 <title>The Peach Lab — Трекер тренувань</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍑</text></svg>">
 </head>
 <body>
 <style>
+  /* Тема «мокрий асфальт»: єдина палітра, не залежить від системної теми */
   :root{
-    --bg:#FBF6F1; --surface:#FFFFFF; --surface2:#F5EAE2; --ink:#342930; --muted:#8D7B81;
-    --accent:#C4573D; --accent-ink:#A8452D; --accent-soft:#F6DDD2; --accent-soft2:#FBEDE5;
-    --line:#EAD9CE; --done:#5E9A6E; --done-soft:#E3EFE6; --chip:#F1E2D8; --on-accent:#FFFFFF; --shadow:0 1px 3px rgba(90,50,35,.08);
-  }
-  @media (prefers-color-scheme: dark){
-    :root:not([data-theme="light"]){
-      --bg:#221B1E; --surface:#2C2427; --surface2:#372D30; --ink:#F2E9E4; --muted:#AC9AA0;
-      --accent:#E08A6B; --accent-ink:#EFA98D; --accent-soft:#4C3630; --accent-soft2:#3B2D2A;
-      --line:#42363A; --done:#82B690; --done-soft:#2E3D33; --chip:#3D3134; --on-accent:#2A1712; --shadow:0 1px 3px rgba(0,0,0,.35);
-    }
-  }
-  :root[data-theme="dark"]{
-    --bg:#221B1E; --surface:#2C2427; --surface2:#372D30; --ink:#F2E9E4; --muted:#AC9AA0;
-    --accent:#E08A6B; --accent-ink:#EFA98D; --accent-soft:#4C3630; --accent-soft2:#3B2D2A;
-    --line:#42363A; --done:#82B690; --done-soft:#2E3D33; --chip:#3D3134; --on-accent:#2A1712; --shadow:0 1px 3px rgba(0,0,0,.35);
+    --bg:#2E3134; --surface:rgba(255,255,255,.07); --surface2:rgba(244,143,184,.13);
+    --ink:#FBF7F8; --muted:#C7B4BE;
+    --accent:#FF9C63; --accent-ink:#FFB27F; --accent-soft:rgba(255,156,99,.22); --accent-soft2:rgba(255,156,99,.12);
+    --line:rgba(255,255,255,.16); --done:#97CBA5; --done-soft:rgba(151,203,165,.18);
+    --chip:rgba(255,255,255,.11); --on-accent:#2A1509;
+    --lotus:#F48FB8; --lotus-soft:rgba(244,143,184,.18);
+    --shadow:0 6px 18px rgba(0,0,0,.35), inset 0 0 36px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.12);
   }
   *{box-sizing:border-box}
   body{
@@ -105,6 +98,42 @@
     border-radius:12px; padding:10px 12px; font-size:14px; margin:10px 0 0}
   .locked input{opacity:.75}
   @media (max-width:420px){ .setrow{grid-template-columns:60px 1fr 1fr} }
+
+  /* ==== ТЕМА «МОКРИЙ АСФАЛЬТ»: фон, скляні картки з віньєткою, персик/лотос ==== */
+  body{
+    background-color:#2E3134;
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='2' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.9 0 0 0 0 0.9 0 0 0 0 0.92 0.10 0 0 0 -0.03'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23g)'/%3E%3C/svg%3E"),
+      radial-gradient(900px 600px at 20% 0%, rgba(255,158,99,.08), transparent 60%),
+      radial-gradient(800px 700px at 95% 100%, rgba(244,143,184,.07), transparent 60%),
+      radial-gradient(1200px 900px at 50% 45%, rgba(255,255,255,.03), transparent 70%);
+    background-size:200px 200px, 100% 100%, 100% 100%, 100% 100%;
+    background-repeat:repeat, no-repeat, no-repeat, no-repeat;
+  }
+  .card, .intro, .syncbox{
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    background:radial-gradient(130% 115% at 50% 0%, rgba(255,255,255,.115), rgba(255,255,255,.05) 48%, rgba(8,8,10,.14) 100%);
+    border-color:rgba(255,255,255,.17);
+  }
+  .intro{background:radial-gradient(130% 115% at 50% 0%, rgba(244,143,184,.20), rgba(244,143,184,.08) 55%, rgba(8,8,10,.12) 100%); box-shadow:inset 0 0 30px rgba(0,0,0,.22)}
+  .weekbar{background:rgba(40,43,46,.70); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border-bottom-color:rgba(255,255,255,.10)}
+  .wchip, .dtab{background:rgba(255,255,255,.08)}
+  .wchip.on{background:var(--accent); border-color:var(--accent); color:var(--on-accent)}
+  .dtab.on{background:var(--accent-soft); border-color:var(--accent)}
+  .dtab .dm{color:#CDBAC4}
+  .setrow input, .exnote, .datebox input{background:rgba(0,0,0,.28); border-color:rgba(255,255,255,.17); color:var(--ink)}
+  .setrow input.filled{background:var(--done-soft); border-color:rgba(151,203,165,.60)}
+  .setrow input::placeholder, .exnote::placeholder{color:rgba(251,247,248,.38)}
+  .setlab{color:#CDBAC4}
+  .m{color:#F2E7EC}
+  .prev{display:block; background:var(--lotus-soft); color:#F9BFD8; border-radius:10px; padding:6px 10px; border:1px solid rgba(244,143,184,.28)}
+  .prev b{color:#FFDCEB}
+  .exen{color:var(--lotus); font-weight:600}
+  .plannote{color:#FFBE93; background:var(--accent-soft2); border:1px solid rgba(255,156,99,.30)}
+  .finishbtn{background:linear-gradient(135deg,#FF9C63,#F48FB8); color:#2A1216}
+  .eyebrow{color:var(--accent)}
+  .sub, .datebox{color:#C7B4BE}
+  .datebox input::-webkit-calendar-picker-indicator{filter:invert(1) opacity(.75)}
 </style>
 
 <div class="wrap">
