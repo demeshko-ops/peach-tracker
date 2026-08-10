@@ -488,6 +488,40 @@ var P = [
 ]}
 ];
 
+/* Групи: різні назви/знаряддя одного руху в різних тижнях. Перший елемент — канонічний ключ.
+   Прогрес «минулого разу» матчиться в межах групи; якщо укр. назва відрізнялась — її видно в примітці. */
+var EX_GROUPS = [
+  ["Hip Thrust","Barbell Hip Thrust"],
+  ["Single Leg Hip Thrust","Single-Leg Hip Thrust"],
+  ["Romanian Deadlift","Romanian Deadlift (DB)","Dumbbell Romanian Deadlift"],
+  ["Bulgarian Split Squat","Bulgarian Split Squat (DB)","Bulgarian Split Squat (KB)",
+   "Bulgarian Split Squat (quads)","Rear Foot Elevated Split Squat"],
+  ["Single Leg Step-Up","Step-Up (Kettlebell)","Step-Up (weighted)","Step-Up (DB)",
+   "Step-Up (DBs)","Single Leg Step-Ups (DB)","Smith Machine Front Foot Elevated Step Up"],
+  ["Overhead Press","Overhead Barbell Press","Smith Machine Shoulder Press","Seated Dumbbell Press"],
+  ["Incline Dumbbell Press","Incline Dumbbell Bench Press","Incline Barbell Bench Press"],
+  ["Walking Lunges","Walking Lunges (wide)"],
+  ["Clamshells","Clamshell"],
+  ["Hammer Curl","Hammer Curl (DB)"],
+  ["Pull-Up / Lat Pulldown","Pull-Up"],
+  ["Lying Leg Curl","Leg Curl"],
+  ["Side Lying Leg Raise","Side Lying Hip Abduction"],
+  ["Glute Bridge (BW)","Glute Bridge (DB)"],
+  ["Triceps Dips (bench)","Triceps Dips (weighted)","Weighted Dips"],
+  ["Curtsy Lunge","Smith Machine Curtsy Lunges"],
+  ["Plank","Plank (feet elevated)","Plank (medicine ball)"],
+  ["Hanging Leg Raise / Cable Crunch","Hanging Leg Raise / Jackknife","Hanging Leg Raise (weighted)"],
+  ["Leg Extensions","Leg Extensions (single leg)"],
+  ["Leg Press","Leg Press (single leg)"],
+  ["Side Lunge","Side Lunge (medicine ball)"],
+  ["Barbell Row","Dumbbell Row"],
+  ["Barbell Bicep Curl","Cable Bicep Curl"],
+  ["Push-Ups","Triceps Push-Up"]
+];
+var EX_CANON = {};
+EX_GROUPS.forEach(function(g){ g.forEach(function(n){ EX_CANON[n]=g[0]; }); });
+function canonEx(en){ return EX_CANON[en] || en; }
+
 /* ==== СТАН ==== */
 var LS_KEY = "peachlab_v1";
 var STORAGE_OK = true;
@@ -556,28 +590,51 @@ function renderDays(){
   $("days").innerHTML = h;
 }
 function prevResult(w,d,i){
-  var en = P[w].days[d][i][1];
+  var cn = canonEx(P[w].days[d][i][1]);
   var best = null, bestOrd = -1, cur = w*10+d;
   for(var ww=0; ww<12; ww++) for(var dd=0; dd<5; dd++){
     var ord = ww*10+dd;
     if(ord >= cur) continue;
     var day = P[ww].days[dd];
     for(var ii=0; ii<day.length; ii++){
-      if(day[ii][1] !== en) continue;
+      if(canonEx(day[ii][1]) !== cn) continue;
       var e = S.log[cellKey(ww,dd)] && S.log[cellKey(ww,dd)].ex[ii];
-      if(exHasData(e) && ord > bestOrd){ bestOrd = ord; best = {e:e, w:ww, d:dd}; }
+      if(exHasData(e) && ord > bestOrd){ bestOrd = ord; best = {e:e, w:ww, d:dd, i:ii}; }
     }
   }
   if(!best) return "";
-  var parts = [];
+  var parts = [], nums = [];
   for(var s=0; s<best.e.s.length; s++){
     var wt = best.e.s[s][0], r = best.e.s[s][1];
-    if(wt || r) parts.push((wt||"—")+"×"+(r||"—"));
+    if(!wt && !r) continue;
+    parts.push((wt||"—")+"×"+(r||"—"));
+    var wn = parseFloat(String(wt).replace(",", ".")), rn = parseFloat(String(r).replace(",", "."));
+    nums.push({w:isNaN(wn)?null:wn, r:isNaN(rn)?null:rn});
   }
   if(!parts.length) return "";
+  /* mwI — сет із макс вагою (при рівній вазі — з більшими повторами), mrI — сет із макс повторами */
+  var mwI = -1, mrI = -1;
+  for(var k=0; k<nums.length; k++){
+    var v = nums[k];
+    if(v.w!==null && (mwI<0 || v.w>nums[mwI].w || (v.w===nums[mwI].w && (v.r||0)>(nums[mwI].r||0)))) mwI = k;
+    if(v.r!==null && (mrI<0 || v.r>nums[mrI].r)) mrI = k;
+  }
+  var fnum = function(x){ return String(x).replace(".", ","); };
+  var max = "";
+  if(mwI>=0 && mrI>=0){
+    if(mwI===mrI) max = "Макс: "+fnum(nums[mwI].w)+" кг × "+fnum(nums[mrI].r);
+    else max = "Макс: вага "+fnum(nums[mwI].w)+" кг"+(nums[mwI].r!==null?" (×"+fnum(nums[mwI].r)+")":"")+
+               " · повтори "+fnum(nums[mrI].r)+(nums[mrI].w!==null?" (з "+fnum(nums[mrI].w)+" кг)":"");
+  } else if(mrI>=0){
+    max = "Макс: "+fnum(nums[mrI].r)+" повт.";
+  } else if(mwI>=0){
+    max = "Макс: "+fnum(nums[mwI].w)+" кг";
+  }
   var dt = S.log[cellKey(best.w,best.d)].date;
   var lbl = dt ? fmtDate(dt) : "Т"+(best.w+1)+" "+DAY_META[best.d][0];
-  return 'Минулого разу <b>('+esc(lbl)+')</b>: '+esc(parts.join(" · "));
+  var srcUa = P[best.w].days[best.d][best.i][0];
+  if(srcUa !== P[w].days[d][i][0]) lbl += " · «"+srcUa+"»";
+  return 'Минулого разу <b>('+esc(lbl)+')</b>: '+esc(parts.join(" · "))+(max?' — <b>'+esc(max)+'</b>':'');
 }
 function fmtDate(iso){
   var p = iso.split("-");
