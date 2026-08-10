@@ -1,0 +1,790 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#FBF6F1">
+<title>The Peach Lab — Трекер тренувань</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍑</text></svg>">
+</head>
+<body>
+<style>
+  :root{
+    --bg:#FBF6F1; --surface:#FFFFFF; --surface2:#F5EAE2; --ink:#342930; --muted:#8D7B81;
+    --accent:#C4573D; --accent-ink:#A8452D; --accent-soft:#F6DDD2; --accent-soft2:#FBEDE5;
+    --line:#EAD9CE; --done:#5E9A6E; --done-soft:#E3EFE6; --chip:#F1E2D8; --on-accent:#FFFFFF; --shadow:0 1px 3px rgba(90,50,35,.08);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#221B1E; --surface:#2C2427; --surface2:#372D30; --ink:#F2E9E4; --muted:#AC9AA0;
+      --accent:#E08A6B; --accent-ink:#EFA98D; --accent-soft:#4C3630; --accent-soft2:#3B2D2A;
+      --line:#42363A; --done:#82B690; --done-soft:#2E3D33; --chip:#3D3134; --on-accent:#2A1712; --shadow:0 1px 3px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#221B1E; --surface:#2C2427; --surface2:#372D30; --ink:#F2E9E4; --muted:#AC9AA0;
+    --accent:#E08A6B; --accent-ink:#EFA98D; --accent-soft:#4C3630; --accent-soft2:#3B2D2A;
+    --line:#42363A; --done:#82B690; --done-soft:#2E3D33; --chip:#3D3134; --on-accent:#2A1712; --shadow:0 1px 3px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  body{
+    background:var(--bg); color:var(--ink);
+    font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    margin:0; padding:0 0 64px;
+    -webkit-text-size-adjust:100%;
+  }
+  .wrap{max-width:760px; margin:0 auto; padding:0 14px}
+  header.top{padding:22px 0 10px}
+  .eyebrow{font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); font-weight:700}
+  h1{font-family:Georgia,"Times New Roman",serif; font-size:clamp(24px,5.5vw,32px); line-height:1.15; margin:6px 0 4px; text-wrap:balance}
+  .sub{color:var(--muted); font-size:14px; margin:0}
+  .weekbar{position:sticky; top:0; z-index:20; background:var(--bg); padding:10px 0 8px; border-bottom:1px solid var(--line)}
+  .weeks{display:flex; gap:6px; overflow-x:auto; padding:2px 2px 6px; scrollbar-width:none}
+  .weeks::-webkit-scrollbar{display:none}
+  .wchip{flex:0 0 auto; min-width:44px; padding:7px 10px; border-radius:999px; border:1px solid var(--line);
+    background:var(--surface); color:var(--ink); font-weight:600; font-size:14px; cursor:pointer; position:relative}
+  .wchip .dot{position:absolute; top:4px; right:7px; width:6px; height:6px; border-radius:50%; background:var(--done); display:none}
+  .wchip.has .dot{display:block}
+  .wchip.on{background:var(--accent); border-color:var(--accent); color:var(--on-accent)}
+  .days{display:flex; gap:6px; padding:8px 2px 2px; overflow-x:auto; scrollbar-width:none}
+  .days::-webkit-scrollbar{display:none}
+  .dtab{flex:1 0 auto; padding:8px 10px; border-radius:12px; border:1px solid var(--line); background:var(--surface);
+    color:var(--ink); cursor:pointer; text-align:center; min-width:64px}
+  .dtab .dl{font-weight:700; font-size:14px}
+  .dtab .dm{font-size:11px; color:var(--muted); display:block; margin-top:1px}
+  .dtab.on{border-color:var(--accent); background:var(--accent-soft2)}
+  .dtab.done .dl::after{content:" ✓"; color:var(--done)}
+  .dtab.lockd .dl::after{content:" 🔒"; font-size:11px}
+  .intro{background:var(--surface2); border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin:14px 0 0; font-size:14px; color:var(--ink)}
+  .dayhead{display:flex; align-items:center; justify-content:space-between; gap:10px; margin:18px 0 4px; flex-wrap:wrap}
+  .dayhead h2{font-family:Georgia,serif; font-size:21px; margin:0}
+  .datebox{display:flex; align-items:center; gap:8px; font-size:14px; color:var(--muted)}
+  .datebox input{border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:10px; padding:7px 9px; font:inherit; font-size:14px}
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px; margin:12px 0; box-shadow:var(--shadow)}
+  .exname{font-weight:700; font-size:16.5px}
+  .exen{color:var(--muted); font-size:13px; margin-top:1px}
+  .exmeta{display:flex; flex-wrap:wrap; gap:6px; margin:9px 0 3px}
+  .m{background:var(--chip); border-radius:8px; padding:3px 8px; font-size:12.5px; font-variant-numeric:tabular-nums}
+  .plannote{margin-top:7px; font-size:13px; color:var(--accent-ink); background:var(--accent-soft); border-radius:8px; padding:5px 9px; display:inline-block}
+  .prev{margin-top:8px; font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums}
+  .prev b{color:var(--ink); font-weight:600}
+  .sets{margin-top:10px; display:flex; flex-direction:column; gap:7px}
+  .setrow{display:grid; grid-template-columns:74px 1fr 1fr; gap:7px; align-items:center}
+  .setlab{font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums}
+  .setlab b{color:var(--ink); font-weight:600}
+  .setrow input{width:100%; border:1px solid var(--line); background:var(--bg); color:var(--ink);
+    border-radius:10px; padding:9px 10px; font:inherit; font-size:16px; font-variant-numeric:tabular-nums}
+  .setrow input:focus, .exnote:focus, .datebox input:focus, button:focus-visible, textarea:focus{outline:2px solid var(--accent); outline-offset:1px}
+  .setrow input.filled{border-color:var(--done); background:var(--done-soft)}
+  .exnote{width:100%; margin-top:9px; border:1px solid var(--line); background:var(--bg); color:var(--ink);
+    border-radius:10px; padding:8px 10px; font:inherit; font-size:14px}
+  .resthead{font-family:Georgia,serif; font-size:20px; margin:18px 0 6px}
+  .syncbox{margin-top:26px; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:16px; box-shadow:var(--shadow)}
+  .syncbox h3{font-family:Georgia,serif; margin:0 0 4px; font-size:19px}
+  .syncbox p{font-size:14px; color:var(--muted); margin:4px 0 12px}
+  .btn{display:inline-block; border:none; border-radius:12px; padding:12px 16px; font:inherit; font-weight:700; font-size:15px; cursor:pointer}
+  .btn-a{background:var(--accent); color:var(--on-accent)}
+  .btn-b{background:var(--chip); color:var(--ink); font-weight:600}
+  .btnrow{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+  a.sheetlink{color:var(--accent-ink); font-weight:600}
+  details{margin-top:12px; font-size:14px}
+  details summary{cursor:pointer; font-weight:600; color:var(--accent-ink)}
+  details ol{margin:8px 0 4px; padding-left:20px}
+  details li{margin:4px 0}
+  .muted{color:var(--muted)}
+  textarea.io{width:100%; height:90px; margin-top:8px; border:1px solid var(--line); border-radius:10px; background:var(--bg); color:var(--ink); font:13px/1.4 ui-monospace,Menlo,Consolas,monospace; padding:8px}
+  .toast{position:fixed; left:50%; transform:translateX(-50%); bottom:18px; background:var(--ink); color:var(--bg);
+    padding:10px 18px; border-radius:999px; font-size:14px; font-weight:600; opacity:0; pointer-events:none; transition:opacity .25s; z-index:50}
+  .toast.show{opacity:1}
+  @media (prefers-reduced-motion: reduce){ .toast{transition:none} }
+  .clearday{margin:6px 0 0; background:none; border:none; color:var(--muted); font:inherit; font-size:13px; cursor:pointer; text-decoration:underline; padding:4px 0}
+  .finishbtn{display:block; width:100%; margin:16px 0 4px; background:var(--done); color:#fff; border:none; border-radius:14px;
+    padding:14px 16px; font:inherit; font-weight:700; font-size:16px; cursor:pointer}
+  .lockbanner{display:flex; gap:8px; align-items:center; background:var(--done-soft); color:var(--ink); border:1px solid var(--done);
+    border-radius:12px; padding:10px 12px; font-size:14px; margin:10px 0 0}
+  .locked input{opacity:.75}
+  @media (max-width:420px){ .setrow{grid-template-columns:60px 1fr 1fr} }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">The Peach Lab 🍑</div>
+    <h1>12-тижневий план: трекер тренувань</h1>
+    <p class="sub">5 тренувань на тиждень · пріоритет — сідниці. Вводь вагу та повтори — все зберігається автоматично на цьому пристрої.</p>
+  </header>
+</div>
+
+<div class="weekbar"><div class="wrap">
+  <div class="weeks" id="weeks"></div>
+  <div class="days" id="days"></div>
+</div></div>
+
+<div class="wrap">
+  <div id="panel"><div class="intro">⏳ Завантаження програми… Якщо це повідомлення не зникає — цей перегляд не запускає інтерактивні сторінки (так буває у вбудованих переглядачах файлів). Відкрий трекер за постійним посиланням, увійшовши на claude.ai, або збережи файл і відкрий його в Chrome чи Safari.</div></div>
+
+  <div class="syncbox">
+    <h3>Твої дані</h3>
+    <p>Усі записи зберігаються <b>прямо в додатку</b> (у пам'яті браузера цього пристрою) — нічого нікуди надсилати не потрібно. Тренування розписані на 12 тижнів і не повторюються, тож журнал повний і без дублів.</p>
+    <details>
+      <summary>Резервна копія / перенесення на інший пристрій</summary>
+      <div class="btnrow" style="margin-top:8px">
+        <button class="btn btn-b" id="expJson">Скопіювати копію даних</button>
+        <button class="btn btn-b" id="impJson">Відновити з копії</button>
+      </div>
+      <textarea class="io" id="ioArea" placeholder="Для відновлення: встав сюди збережену копію даних і натисни «Відновити з копії»."></textarea>
+      <div class="muted">Щоб перенести журнал на інший пристрій — скопіюй копію тут і віднови її там.</div>
+    </details>
+    <details>
+      <summary>Експорт журналу (для аналізу та графіків)</summary>
+      <div class="btnrow" style="margin-top:8px">
+        <button class="btn btn-b" id="copyTsv">📋 Скопіювати журнал таблицею</button>
+      </div>
+      <div class="muted">Копіює всі записи у табличному форматі — знадобиться наприкінці програми для графіків прогресу.</div>
+    </details>
+  </div>
+</div>
+
+<div class="toast" id="toast">Скопійовано ✓</div>
+
+<script>
+"use strict";
+/* ==== ПРОГРАМА: [укр назва, англ назва, серій, повтори, пауза, темп, нотатка] ==== */
+var DAY_META = [
+  ["Пн","Сідниці (фокус)"],
+  ["Вт","Push: плечі, трицепс, груди + прес"],
+  ["Ср","Стегна (квадрицепси)"],
+  ["Чт","Pull: спина, задні дельти, біцепс + прес"],
+  ["Пт","Сідниці + задня поверхня стегна"],
+  ["Сб·Нд","Кардіо, мобільність / відпочинок"]
+];
+var P = [
+{intro:"Стартовий тиждень: постав техніку, підбери робочі ваги. Першу серію кожної вправи роби легшою — як розминочну.", days:[
+ [["Сідничний міст зі штангою","Hip Thrust",4,"15, 12, 10, 8 + rest-pause","2–3 хв","3010","Остання серія до відмови"],
+  ["Болгарські випади","Bulgarian Split Squat",3,"12, 10, 8 на ногу","90 с","2020","Стабільність і амплітуда"],
+  ["Махи гирею","Kettlebell Swing",3,"20","60 с","швидко",""],
+  ["Відведення ноги на блоці","Cable Kickback",2,"15, 12","60 с","2020",""],
+  ["Бічна планка з підйомом ноги","Side Plank + Abduction",2,"15 на бік","30 с","2010",""],
+  ["Сідничний місток (своя вага)","Glute Bridge (BW)",2,"20–25","30 с","2010",""]],
+ [["Жим штанги стоячи","Overhead Press",4,"12, 10, 8, 6","90 с","2010",""],
+  ["Махи гантелями в сторони","Lateral Raise",3,"15, 12, 10","60 с","2020",""],
+  ["Жим гантелей на похилій лаві","Incline Dumbbell Press",3,"12, 10, 8","90 с","3010",""],
+  ["Розгинання на трицепс (канат)","Cable Rope Pushdown",3,"15, 12, 10","60 с","2010",""],
+  ["Планка","Plank",3,"45–60 с","30 с","статично",""]],
+ [["Присідання зі штангою","Squat",4,"15, 12, 10, 8","2 хв","3010",""],
+  ["Випади в русі (широка стійка)","Walking Lunges (wide)",3,"12, 10, 8 на ногу","90 с","2010",""],
+  ["Жим ногами","Leg Press",3,"15, 12, 10","2 хв","3010",""],
+  ["Зашагування однією ногою (з гантелею)","Single Leg Step-Up",3,"12, 10, 8 на ногу","90 с","2010",""],
+  ["Підйом ноги лежачи на боці","Side Lying Leg Raise",2,"20 на бік","30 с","2020",""]],
+ [["Підтягування / тяга верхнього блоку","Pull-Up / Lat Pulldown",4,"12, 10, 8, 6","90–120 с","2010",""],
+  ["Тяга штанги в нахилі","Barbell Row",4,"12, 10, 8, 6","2 хв","3010",""],
+  ["Тяга канату до обличчя","Face Pull",3,"15, 12, 10","60 с","2020",""],
+  ["Згинання рук «молоток»","Hammer Curl",3,"12, 10, 8","90 с","2010",""],
+  ["Підйом ніг у висі / скручування на блоці","Hanging Leg Raise / Cable Crunch",3,"12–15","60 с","контроль",""]],
+ [["Румунська тяга","Romanian Deadlift",4,"12, 10, 8, 12","2 хв","3010","Активація заднього ланцюга"],
+  ["Сідничний міст зі штангою","Hip Thrust",4,"15, 12, 10, 8 + rest-pause","2 хв","3010","Остання серія до відмови"],
+  ["Згинання ніг лежачи","Lying Leg Curl",3,"15, 12, 10","90 с","3010",""],
+  ["Випади «реверанс»","Curtsy Lunge",3,"12 на бік","60 с","2010",""],
+  ["Махи гирею","Kettlebell Swing",2,"20","60 с","швидко",""]]
+]},
+{intro:"Другий тиждень: ті самі схеми, трохи менше повторів — додай вагу там, де минулого тижня було легко.", days:[
+ [["Сідничний міст зі штангою","Hip Thrust",4,"12, 10, 8, 6 + rest-pause","2–3 хв","3010","Остання серія до відмови"],
+  ["Болгарські випади","Bulgarian Split Squat",3,"10, 8, 6 на ногу","90 с","2020","Вища інтенсивність"],
+  ["Махи гирею","Kettlebell Swing",3,"20","60 с","швидко",""],
+  ["Відведення ноги на блоці","Cable Kickback",3,"15, 12, 10","60 с","2020",""],
+  ["Розведення ніг у тренажері","Machine Abduction",2,"15","60 с","2010",""],
+  ["Сідничний місток (своя вага)","Glute Bridge (BW)",2,"20–25","30 с","2010",""]],
+ [["Жим штанги стоячи","Overhead Press",4,"10, 8, 6, 6","90 с","2010",""],
+  ["Жим Арнольда","Arnold Press",3,"12, 10, 8","60 с","2010","Варіація на плечі"],
+  ["Жим гантелей на похилій лаві","Incline Dumbbell Press",3,"10, 8, 6","90 с","3010",""],
+  ["Розгинання на трицепс (канат)","Cable Rope Pushdown",3,"12, 10, 8","60 с","2010",""],
+  ["Підйом ніг у висі / скручування на блоці","Hanging Leg Raise / Cable Crunch",3,"15","60 с","контроль",""]],
+ [["Присідання зі штангою","Squat",4,"12, 10, 8, 6 + rest-pause","2–3 хв","3010","Остання серія до відмови"],
+  ["Зворотні випади","Reverse Lunges",3,"12, 8, 6 на ногу","90 с","2010",""],
+  ["Жим ногами","Leg Press",3,"12, 10, 8","2 хв","3010",""],
+  ["Зашагування однією ногою (з гантелею)","Single Leg Step-Up",3,"10, 8, 6 на ногу","90 с","2010",""],
+  ["Розгинання ніг у тренажері","Leg Extensions",3,"20, 15, 12","60 с","1011",""]],
+ [["Підтягування / тяга верхнього блоку","Pull-Up / Lat Pulldown",4,"10, 8, 6, 6","90 с","2010",""],
+  ["Тяга штанги в нахилі","Barbell Row",4,"10, 8, 6, 6","2 хв","3010",""],
+  ["Тяга канату до обличчя","Face Pull",3,"12, 10, 8","60 с","2020",""],
+  ["Згинання рук на похилій лаві","Incline Dumbbell Curl",3,"12, 10, 8","90 с","2010","Варіація на біцепс"],
+  ["«Складка» на прес","Jackknife Sit-Ups",3,"10–15","60 с","контроль",""]],
+ [["Румунська тяга","Romanian Deadlift",4,"12, 10, 8, 6 + drop-set","2 хв","3010","Активація заднього ланцюга"],
+  ["Сідничний міст зі штангою","Hip Thrust",4,"12, 10, 8, 6 + rest-pause","2–3 хв","3010","Остання серія до відмови"],
+  ["Згинання ніг лежачи","Lying Leg Curl",3,"12, 10, 8","90 с","3010",""],
+  ["Зашагування у Сміті (нога на підвищенні)","Smith Machine Front Foot Elevated Step Up",3,"12, 10, 8 на ногу","90 с","2010",""],
+  ["Махи гирею","Kettlebell Swing",3,"20","60 с","швидко",""]]
+]},
+{intro:"Тиждень 3: підвищуємо інтенсивність, з’являються суперсерії та нові вправи для різноманіття.", days:[
+ [["Сідничний міст зі штангою","Hip Thrust",4,"10, 8, 6, 6 + rest-pause","2 хв","3010","Останні дві серії до відмови"],
+  ["Болгарські випади (з гантелями)","Bulgarian Split Squat (DB)",3,"10, 8, 6 на ногу","90 с","2020",""],
+  ["Румунська тяга","Romanian Deadlift",4,"10, 8, 6, 6","2 хв","3010","Активація заднього ланцюга"],
+  ["Протяжка між ніг на блоці","Cable Pull-Through",3,"12, 10, 8","90 с","3010",""],
+  ["Бічна планка з підйомом ноги","Side Plank + Abduction",2,"15 на бік","30 с","2010",""],
+  ["Сідничний місток (своя вага)","Glute Bridge (BW)",2,"20–25","30 с","2010",""]],
+ [["Жим штанги стоячи","Overhead Press",4,"10, 8, 6, 6","90 с","2010",""],
+  ["Жим Арнольда","Arnold Press",3,"12, 10, 8","60 с","2020","Варіація на плечі"],
+  ["Розведення гантелей лежачи","Dumbbell Chest Fly",3,"12, 10, 8","90 с","3010",""],
+  ["Розгинання на трицепс (канат)","Cable Rope Pushdown",3,"12, 10, 8","60 с","2010",""],
+  ["Підйом ніг у висі / скручування на блоці","Hanging Leg Raise / Cable Crunch",3,"12–15","60 с","контроль",""]],
+ [["Присідання зі штангою","Squat",4,"10, 8, 6, 6","2 хв","3010",""],
+  ["Випади в русі","Walking Lunges",3,"10, 8, 6 на ногу","90 с","2010",""],
+  ["Зашагування з гирею","Step-Up (Kettlebell)",3,"12, 10, 8 на ногу","90 с","2010",""],
+  ["Жим ногами + згинання ніг (суперсерія)","Leg Press + Leg Curl (superset)",3,"12 + 15","90 с","3010/2010",""],
+  ["Розгинання ніг у тренажері","Leg Extensions",3,"15","60 с","1010",""]],
+ [["Підтягування / тяга верхнього блоку","Pull-Up / Lat Pulldown",4,"10, 8, 6, 6","90 с","2010",""],
+  ["Тяга штанги в нахилі","Barbell Row",4,"10, 8, 6, 6","2 хв","3010",""],
+  ["Тяга канату до обличчя","Face Pull",3,"12, 10, 8","60 с","2020",""],
+  ["Тяга прямими руками","Straight Arm Lat Pulldown",3,"15, 12, 10","60 с","2010",""],
+  ["Планка з ротацією","Plank with Rotation",3,"12 ротацій","30 с","контроль","Стабілізація корпусу"]],
+ [["Straddle Lift (тяга в широкій стійці)","Straddle Lift",4,"15, 12, 10, 8","2 хв","3010","Активація заднього ланцюга"],
+  ["Сідничний міст зі штангою","Hip Thrust",4,"10, 8, 6, 6 + rest-pause","2 хв","3010","Останні дві серії до відмови"],
+  ["Згинання ніг лежачи","Lying Leg Curl",3,"12, 10, 8","90 с","3010",""],
+  ["Відведення стегна на блоці","Cable Hip Abduction",3,"12–15 на бік","60 с","1010",""],
+  ["Протяжка між ніг на блоці","Cable Pull-Through",3,"12, 10, 8","90 с","3011",""]]
+]},
+{intro:"Тиждень 4: поступово ростить інтенсивність, легка заміна вправ і більше суперсерій для ефективності.", days:[
+ [["Сідничний міст зі штангою","Hip Thrust",3,"12, 10, 8 + rest-pause","2–3 хв","3010","Остання серія до відмови"],
+  ["Болгарські випади (з гирею)","Bulgarian Split Squat (KB)",3,"10, 8, 6 на ногу","90 с","2020",""],
+  ["Румунська тяга","Romanian Deadlift",4,"10, 8, 6, 6","2 хв","3010","Активація заднього ланцюга"],
+  ["Махи гирею","Kettlebell Swing",3,"20","60 с","швидко",""],
+  ["Бічна планка з підйомом ноги","Side Plank + Abduction",2,"12 на бік","30 с","2010",""],
+  ["Сідничний місток (з гантелею)","Glute Bridge (DB)",2,"15, 12","60 с","2010","Додана вага для інтенсивності"]],
+ [["Жим штанги стоячи","Overhead Press",4,"10, 8, 6, 6","90 с","2010",""],
+  ["Махи гантелями в сторони","Lateral Raise",3,"15, 12, 10","60 с","2020",""],
+  ["Жим гантелей на похилій лаві","Incline Dumbbell Press",3,"12, 10, 8","90 с","3010",""],
+  ["Розгинання на трицепс (канат)","Cable Rope Pushdown",3,"12, 10, 8","60 с","2010",""],
+  ["Планка (ноги на лаві)","Plank (feet elevated)",3,"45–60 с","30 с","статично","Підвищена складність"]],
+ [["Присідання зі штангою","Squat",4,"12, 10, 8, 6","2–3 хв","3010","Остання серія до відмови"],
+  ["Зворотні випади","Reverse Lunges",3,"10, 8, 6 на ногу","90 с","2010",""],
+  ["Жим однією ногою","Leg Press (single leg)",4,"15, 12, 10, 8","2 хв","3010",""],
+  ["Зашагування з обтяженням","Step-Up (weighted)",3,"12, 10, 8 на ногу","90 с","2010",""],
+  ["Підйом ноги лежачи на боці","Side Lying Leg Raise",3,"20 на бік","30 с","2020",""]],
+ [["Підтягування / тяга верхнього блоку","Pull-Up / Lat Pulldown",4,"12, 10, 8, 6","90 с","2010",""],
+  ["Тяга гантелі в нахилі","Dumbbell Row",4,"12, 10, 8, 8 + drop-set","90 с","3010",""],
+  ["Розведення на задні дельти","Rear Delt Fly",3,"15, 12, 10","60 с","2020",""],
+  ["Згинання рук зі штангою","Barbell Bicep Curl",3,"12, 10, 8","90 с","2010",""],
+  ["Підйом ніг у висі / скручування на блоці","Hanging Leg Raise / Cable Crunch",3,"15","60 с","контроль","Стабілізація корпусу"]],
+ [["Румунська тяга","Romanian Deadlift",4,"12, 10, 8, 6 + drop-set","2 хв","3010","Активація заднього ланцюга"],
+  ["Сідничний міст зі штангою","Hip Thrust",4,"12, 10, 8, 6 + rest-pause","2 хв","3010","Останні дві серії до відмови"],
+  ["Згинання ніг лежачи","Lying Leg Curl",3,"12, 10, 8","90 с","3010",""],
+  ["«Мушля» (розведення колін лежачи)","Clamshells",3,"12 на бік","60 с","2010",""],
+  ["Махи гирею","Kettlebell Swing",3,"20","60 с","швидко",""]]
+]},
+{intro:"Тиждень 5: нові акценти — зворотна гіперекстензія, гак-присідання, більше роботи до відмови.", days:[
+ [["Сідничний міст зі штангою","Hip Thrust",4,"10, 8, 6, 6 + rest-pause","2 хв","3010","Останні дві серії до відмови"],
+  ["Зашагування у Сміті (нога на підвищенні)","Smith Machine Front Foot Elevated Step Up",3,"10, 8, 6 + rest-pause на ногу","90 с","2020","Стабільність і амплітуда"],
+  ["Зворотна гіперекстензія (на лаві)","Reverse Hyperextension",3,"12, 10, 8","90 с","2020","Задній ланцюг і сідниці"],
+  ["Відведення стегна на блоці","Cable Hip Abduction",3,"12 на бік","45 с","2010",""],
+  ["Відведення ноги на блоці","Cable Kickback",3,"15, 12, 10","60 с","2020","Фокус на скорочення"]],
+ [["Жим гантелей сидячи","Seated Dumbbell Press",4,"10, 8, 6, 6","90 с","2010",""],
+  ["Махи гантелями в сторони","Lateral Raise",3,"12, 10, 8 + drop-set","60 с","2020",""],
+  ["Жим гантелей на похилій лаві","Incline Dumbbell Press",4,"12, 10, 8, 6","90 с","3010",""],
+  ["Розгинання на трицепс (канат)","Cable Rope Pushdown",3,"15, 12, 10","60 с","2010",""],
+  ["Планка з відведенням стегна","Plank + Hip Abduction",3,"12 на бік","30 с","контроль","Стабілізація корпусу"]],
+ [["Гак-присідання","Hack Squat",5,"12, 10, 8, 6 + drop-set","2–3 хв","3010","Контроль і глибина"],
+  ["Випади в русі","Walking Lunges",3,"10, 8, 6 на ногу","90 с","2010","Контрольований рух"],
+  ["Жим ногами + зашагування (суперсерія)","Leg Press + Step-Up (superset)",4,"12 + 10","2 хв","3010/2010","Підвищена інтенсивність"],
+  ["Розгинання ніг у тренажері","Leg Extensions",3,"15","60 с","1011",""]],
+ [["Підтягування / тяга верхнього блоку","Pull-Up / Lat Pulldown",4,"10, 8, 6, 6 + rest-pause","90 с","2010",""],
+  ["Тяга гантелі в нахилі","Dumbbell Row",4,"12, 10, 8, 6","2 хв","3010",""],
+  ["Тяга канату до обличчя","Face Pull",3,"12, 10, 8 + drop-set","60 с","2020",""],
+  ["Згинання рук на похилій лаві","Incline Dumbbell Curl",3,"12, 10, 8","90 с","2010",""],
+  ["Підйом ніг у висі / скручування на блоці","Hanging Leg Raise / Cable Crunch",3,"15","60 с","контроль","Стабілізація корпусу"]],
+ [["Румунська тяга","Romanian Deadlift",4,"12, 10, 8, 6 + drop-set","2 хв","3010","Активація заднього ланцюга"],
+  ["Сідничний міст зі штангою","Hip Thrust",4,"12, 10, 8, 6 + rest-pause","2 хв","3010","Останні дві серії до відмови"],
+  ["Згинання ніг лежачи","Lying Leg Curl",3,"12, 10, 8","90 с","3010",""],
+  ["«Мушля» (розведення колін лежачи)","Clamshells",3,"12 на бік","60 с","2010",""],
+  ["Махи гирею","Kettlebell Swing",3,"20","60 с","швидко",""]]
+]},
+{intro:"Тиждень 6: ще більше варіативності — фронтальні присідання, сумо, нові вправи для спини та плечей.", days:[
+ [["Сідничний міст зі штангою","Hip Thrust",4,"12, 10, 8, 6 + rest-pause","2–3 хв","3010","Останні дві серії до відмови"],
+  ["Присідання сумо з гантелею","Dumbbell Sumo Squat",3,"15, 12, 10 + drop-set","90 с","3010","Стабільність і контроль"],
+  ["Зворотна гіперекстензія","Reverse Hyperextension",3,"12, 10, 8","90 с","2020","Задній ланцюг і сідниці"],
+  ["Бічна планка з підйомом ноги","Side Plank + Abduction",3,"12 на бік","30 с","2010",""],
+  ["Відведення ноги на блоці","Cable Kickback",3,"15, 12, 10","60 с","2020","Фокус на скорочення"]],
+ [["Жим у Сміті на плечі","Smith Machine Shoulder Press",4,"10, 8, 6, 6","90 с","2010",""],
+  ["Махи гантелями в сторони","Lateral Raise",3,"15, 12, 10","60 с","2020","Середній пучок дельт"],
+  ["Жим штанги на похилій лаві","Incline Barbell Bench Press",4,"12, 10, 8, 6","90 с","3010",""],
+  ["Зворотні віджимання від лави","Triceps Dips (bench)",3,"12, 10, 8","60 с","контроль","Своя вага"],
+  ["Підйом ніг у висі / скручування на блоці","Hanging Leg Raise / Cable Crunch",3,"15","60 с","контроль","Стабілізація корпусу"]],
+ [["Фронтальні присідання","Front Squat",3,"12, 10, 8","90 с","3010",""],
+  ["Гак-присідання","Hack Squat",4,"12, 10, 8, 6","2 хв","3010","Контроль глибини й техніки"],
+  ["Straddle Lift (тяга в широкій стійці)","Straddle Lift",4,"15, 12, 10, 8","2 хв","3010",""],
+  ["Зашагування у Сміті (нога на підвищенні)","Smith Machine Front Foot Elevated Step Up",3,"12, 10, 8 на ногу","90 с","2010",""],
+  ["Сісі-присідання / розгинання ніг","Sissy Squat / Leg Extensions",2,"12–20","60 с","—",""]],
+ [["Підтягування / тяга верхнього блоку","Pull-Up / Lat Pulldown",4,"15, 10, 8, 8 + drop-set","90 с","2010",""],
+  ["Тяга штанги в нахилі","Barbell Row",4,"12, 10, 8, 6","2 хв","3010",""],
+  ["Розведення на задні дельти","Rear Delt Fly",3,"12, 10, 8","60 с","2011",""],
+  ["Згинання рук на похилій лаві","Incline Dumbbell Curl",3,"12, 10, 8","90 с","2010",""],
+  ["«Дроворуб» на блоці","Cable Woodchopper",3,"12 на бік","30 с","2010","Ротація корпусу"]],
+ [["Румунська тяга (з гантелями)","Romanian Deadlift (DB)",4,"10, 8, 6, 6","2 хв","3010","Активація заднього ланцюга"],
+  ["Сідничний міст зі штангою","Hip Thrust",4,"10, 8, 6, 6 + rest-pause","2 хв","3010","Останні дві серії до відмови"],
+  ["Скандинавські згинання","Nordic Curl",3,"8, 6, 6","90 с","контроль","Допомога руками"],
+  ["Кроки вбік із гумкою","Lateral Band Walks",3,"15 на бік","60 с","—",""],
+  ["Махи гирею","Kettlebell Swing",3,"20","60 с","швидко",""]]
+]},
+{intro:"Тиждень 7: нові варіанти на кшталт гоблет-присідань і більший акцент на м’язи кора.", days:[
+ [["Сідничний міст зі штангою","Hip Thrust",4,"12, 10, 8, 6 + rest-pause","2 хв","3010","Останні дві серії до відмови"],
+  ["Болгарські випади (з гантелями)","Bulgarian Split Squat (DB)",3,"12, 10, 8 на ногу","90 с","2020","Стабільність і контроль"],
+  ["Зворотна гіперекстензія","Reverse Hyperextension",3,"12, 10, 8","90 с","2020","Задній ланцюг і сідниці"],
+  ["Відведення стегна на блоці","Cable Hip Abduction",3,"15 на бік","30 с","2010",""],
+  ["Протяжка між ніг на блоці","Cable Pull-Through",3,"12, 10, 8","60 с","2020","Фокус на контроль"]],
+ [["Жим штанги стоячи","Overhead Press",4,"12, 10, 8, 6 + drop-set","90 с","2010",""],
+  ["Махи гантелями в сторони","Lateral Raise",3,"15, 12, 10","60 с","2020","Середній пучок дельт"],
+  ["Жим гантелей на похилій лаві","Incline Dumbbell Press",3,"12, 10, 8","90 с","3010",""],
+  ["Французький жим із гантелею","Dumbbell Triceps Extension",3,"12, 10, 8","60 с","контроль","Фокус на контроль"],
+  ["Підйом ніг у висі / «складка»","Hanging Leg Raise / Jackknife",3,"15","60 с","контроль","Стабілізація корпусу"]],
+ [["Гак-присідання","Hack Squat",4,"12, 10, 8, 6 + rest-pause","2 хв","3010","Контроль глибини й техніки"],
+  ["Випади в русі","Walking Lunges",3,"20 на ногу","90 с","2010","Контрольований рух"],
+  ["Гоблет-присідання","Goblet Squat",3,"12, 10, 10","90 с","3010",""],
+  ["Зашагування (з гантелею)","Step-Up (DB)",3,"12, 10, 8 на ногу","90 с","2010",""],
+  ["Розгинання ніг (однією ногою)","Leg Extensions (single leg)",2,"15","30 с","1011",""]],
+ [["Підтягування / тяга верхнього блоку","Pull-Up / Lat Pulldown",4,"10, 8, 6, 6 + drop-set","90 с","2010",""],
+  ["Тяга гантелі в нахилі","Dumbbell Row",4,"12, 10, 8, 6","2 хв","3010",""],
+  ["Тяга канату до обличчя","Face Pull",3,"15, 12, 10","60 с","2011",""],
+  ["Згинання рук на похилій лаві","Incline Dumbbell Curl",3,"12, 10, 8","90 с","2010",""],
+  ["«Дроворуб» на блоці","Cable Woodchopper",3,"12 на бік","30 с","2010","Ротація корпусу"]],
+ [["Румунська тяга","Romanian Deadlift",4,"10, 8, 6, 6 + drop-set","2 хв","3010","Активація заднього ланцюга"],
+  ["Сідничний міст зі штангою","Hip Thrust",4,"10, 8, 6, 6 + rest-pause","2 хв","3010","Останні дві серії до відмови"],
+  ["Скандинавські згинання","Nordic Curl",3,"8, 6, 6","90 с","контроль","Фокус на хамстринги"],
+  ["Згинання ніг","Leg Curl",3,"12","60 с","2010",""],
+  ["Махи гирею","Kettlebell Swing",3,"20","60 с","швидко",""]]
+]},
+{intro:"Тиждень 8: тримаємо ключові вправи й додаємо фінальну інтенсивність циклу.", days:[
+ [["Сідничний міст зі штангою","Hip Thrust",4,"10, 8, 6, 6 + drop-set","2–3 хв","3010","Остання серія drop-set до відмови"],
+  ["Зашагування у Сміті (нога на підвищенні)","Smith Machine Front Foot Elevated Step Up",3,"12, 10, 8 на ногу","90 с","2020","Стабільність і контроль"],
+  ["Зворотна гіперекстензія","Reverse Hyperextension",3,"12, 10, 8","90 с","2020","Задній ланцюг і сідниці"],
+  ["Бічна планка з підйомом ноги","Side Plank + Abduction",2,"15 на бік","30 с","2010",""],
+  ["Відведення ноги на блоці","Cable Kickback",3,"15, 12, 10","60 с","2020","Повне скорочення"]],
+ [["Жим у Сміті на плечі","Smith Machine Shoulder Press",4,"10, 8, 6, 6","90 с","2010",""],
+  ["Махи гантелями в сторони","Lateral Raise",3,"15, 12, 10","60 с","2020","Середній пучок дельт"],
+  ["Жим штанги на похилій лаві","Incline Barbell Bench Press",4,"12, 10, 8, 6","90 с","3010",""],
+  ["Розгинання рук у нахилі","Dumbbell Triceps Kickbacks",3,"15, 12, 10","60 с","контроль","Фокус на техніку"],
+  ["«Скелелаз»","Mountain Climbers",3,"40–60 с","60 с","контроль","Стабілізація корпусу"]],
+ [["Гак-присідання","Hack Squat",4,"10, 8, 6, 6 + rest-pause","2 хв","3010","Контроль глибини й техніки"],
+  ["Випади в русі","Walking Lunges",3,"12, 10, 8 на ногу","90 с","2010","Контрольований рух"],
+  ["Присідання з ленд-майном","Landmine Squat",3,"12, 10, 8","2 хв","3010",""],
+  ["Зашагування (з гантелями)","Step-Up (DBs)",3,"12, 10, 8 на ногу","90 с","2010",""],
+  ["«Стільчик» біля стіни","Wall Sit",3,"max","30 с","—",""]],
+ [["Підтягування / тяга верхнього блоку","Pull-Up / Lat Pulldown",4,"10, 8, 6, 6 + rest-pause","90 с","2010",""],
+  ["Австралійські підтягування","Inverted Row",4,"12, 10, 8, 6","2 хв","3010",""],
+  ["Розведення на задні дельти","Rear Delt Fly",3,"12, 10, 8","60 с","2020",""],
+  ["Згинання рук на похилій лаві","Incline Dumbbell Curl",3,"12, 10, 8","90 с","2010",""],
+  ["Дотики до п'ят","Heel Touches",3,"20 на бік","45 с","2010",""]],
+ [["Румунська тяга","Romanian Deadlift",4,"10, 8, 6, 6","2 хв","3010","Активація заднього ланцюга"],
+  ["Сідничний міст зі штангою","Hip Thrust",4,"10, 8, 6, 6 + rest-pause","2–3 хв","3010","Останні дві серії до відмови"],
+  ["Скандинавські згинання","Nordic Curl",3,"8, 6, 6","90 с","контроль","Фокус на хамстринги"],
+  ["Розведення ніг у тренажері","Machine Abduction",3,"12–20","60 с","2011",""],
+  ["Махи гирею","Kettlebell Swing",3,"20","60 с","швидко",""]]
+]},
+{intro:"Тиждень 9: висока інтенсивність; поступово налаштовуємо об’єм і частоту перед фінальною фазою.", days:[
+ [["Сідничний міст зі штангою","Hip Thrust",4,"10, 8, 6, 6 + drop-set","2 хв","3010","Остання серія drop-set до відмови"],
+  ["Болгарські випади","Bulgarian Split Squat",3,"12, 10, 8 на ногу","90 с","2020","Стабільність і контроль"],
+  ["Зворотна гіперекстензія","Reverse Hyperextension",3,"12, 10, 8","90 с","2020","Задній ланцюг і сідниці"],
+  ["Сідничний місток однією ногою","Single Leg Glute Bridge",3,"max","60 с","2010",""],
+  ["Відведення стегна на блоці","Cable Hip Abduction",3,"15, 12, 10","60 с","2020","Повне скорочення"]],
+ [["Жим штанги стоячи","Overhead Press",4,"12, 10, 8, 6","90 с","2010",""],
+  ["Махи гантелями в сторони","Lateral Raise",3,"15, 12, 10","60 с","2020","Середній пучок дельт"],
+  ["Віджимання","Push-Ups",3,"12, 10, 8","90 с","2010",""],
+  ["Розгинання рук у нахилі","Dumbbell Triceps Kickbacks",3,"15, 12, 10","60 с","контроль","Фокус на техніку"],
+  ["Планка","Plank",4,"max","30 с","контроль","Стабілізація корпусу"]],
+ [["Фронтальні присідання","Front Squat",4,"10, 8, 6, 6 + rest-pause","2 хв","3010","Контроль глибини й техніки"],
+  ["Випади в русі","Walking Lunges",3,"12, 10, 8 на ногу","90 с","2010","Контрольований рух"],
+  ["Стрибки на тумбу","Box Jump",3,"15","60 с","—",""],
+  ["Зашагування (з гантелею)","Step-Up (DB)",3,"12, 10, 8 на ногу","90 с","2010",""],
+  ["Підйом ноги лежачи на боці","Side Lying Leg Raise",3,"20 на бік","30 с","2020",""]],
+ [["Підтягування / тяга верхнього блоку","Pull-Up / Lat Pulldown",4,"10, 8, 6, 6","90 с","2010",""],
+  ["Тяга штанги в нахилі","Barbell Row",4,"12, 10, 8, 6","2 хв","3010",""],
+  ["Тяга канату до обличчя","Face Pull",3,"12, 10, 8","60 с","2020",""],
+  ["Згинання рук на блоці","Cable Bicep Curl",3,"12, 10, 8","90 с","2010",""],
+  ["«Дроворуб» на блоці","Cable Woodchopper",3,"12 на бік","30 с","2010","Ротація корпусу"]],
+ [["Румунська тяга","Romanian Deadlift",4,"10, 8, 6, 6","2 хв","3010","Активація заднього ланцюга"],
+  ["Сідничний міст зі штангою","Hip Thrust",4,"10, 8, 6, 6 + drop-set","2 хв","3010","Остання серія drop-set до відмови"],
+  ["Скандинавські згинання","Nordic Curl",3,"8, 6, 6","90 с","контроль","Фокус на хамстринги"],
+  ["«Мушля» (розведення колін лежачи)","Clamshell",3,"15 на бік","60 с","2011",""],
+  ["Махи гирею","Kettlebell Swing",3,"20","60 с","швидко",""]]
+]},
+{intro:"Тиждень 10: пік циклу. Максимальна інтенсивність, коротші паузи, більше серій до відмови, drop-сети й суперсерії.", days:[
+ [["Сідничний міст зі штангою","Hip Thrust",5,"12, 10, 8, 6, 6 + drop-set","2–3 хв","3010","Остання серія до відмови з drop-set"],
+  ["Болгарські випади","Bulgarian Split Squat",3,"12, 10, 8 на ногу","90 с","2020","Контрольований рух"],
+  ["Зворотна гіперекстензія","Reverse Hyperextension",4,"15, 12, 10, 8","90 с","2020","Максимальна амплітуда"],
+  ["Бічна планка з підйомом ноги","Side Plank + Abduction",3,"15 на бік","30 с","2010",""],
+  ["Відведення ноги на блоці","Cable Kickback",3,"15, 12, 10","60 с","2020","Фокус на скорочення"]],
+ [["Жим штанги стоячи","Overhead Press",5,"12, 10, 8, 6, 6","90 с","2010","Остання серія до відмови"],
+  ["Махи в сторони + перед собою (суперсерія)","Lateral Raise + Front Raise (superset)",3,"12 + 12","60 с","2020","Максимальна активація плечей"],
+  ["Жим гантелей на похилій лаві","Incline Dumbbell Bench Press",4,"12, 10, 8, 6","90 с","3010",""],
+  ["Зворотні віджимання (з вагою)","Triceps Dips (weighted)",3,"12, 10, 8","60 с","контроль",""],
+  ["Планка (медбол під ногами)","Plank (medicine ball)",3,"30–45 с","30 с","статично","Сильніший кор"]],
+ [["Гак-присідання","Hack Squat",5,"12, 10, 8, 6, 6 + drop-set","2 хв","3010","Техніка й максимальне навантаження"],
+  ["Випади в русі","Walking Lunges",3,"12, 10, 8 на ногу","90 с","2010","Контрольований рух"],
+  ["Straddle Lift (тяга в широкій стійці)","Straddle Lift",3,"12, 10, 8","2 хв","3010","Активація заднього ланцюга"],
+  ["Жим ногами","Leg Press",4,"15, 12, 10, 8","2 хв","3010","Максимальна глибина"],
+  ["Підйом ноги лежачи на боці","Side Lying Leg Raise",3,"20 на бік","30 с","2020",""]],
+ [["Підтягування / тяга верхнього блоку","Pull-Up / Lat Pulldown",5,"10, 8, 6, 6, 6 + rest-pause","90 с","2010",""],
+  ["Тяга штанги в нахилі","Barbell Row",4,"12, 10, 8, 6","2 хв","3010",""],
+  ["Тяга канату до обличчя","Face Pull",3,"15, 12, 10","60 с","2020",""],
+  ["Згинання рук на похилій лаві","Incline Dumbbell Curl",3,"12, 10, 8","90 с","2010",""],
+  ["«Дроворуб» на блоці","Cable Woodchopper",3,"12 на бік","30 с","2010","Ротація корпусу"]],
+ [["Румунська тяга","Romanian Deadlift",5,"12, 10, 8, 6, 6 + drop-set","2 хв","3010","Активація заднього ланцюга"],
+  ["Сідничний міст зі штангою","Hip Thrust",5,"10, 8, 6, 6 + drop-set","2 хв","3010","Остання серія drop-set до відмови"],
+  ["Скандинавські згинання","Nordic Curl",3,"8, 6, 6","90 с","контроль","Фокус на хамстринги"],
+  ["Бічні випади","Side Lunge",3,"12 на бік","60 с","2010",""],
+  ["Махи гирею","Kettlebell Swing",3,"20","60 с","швидко",""]]
+]},
+{intro:"Тиждень 11: більше нестандартних вправ і суперсерій — підбираємось до вершини.", days:[
+ [["Сідничний міст зі штангою","Barbell Hip Thrust",5,"12, 10, 8, 6, 6","2 хв","3010","Остання серія з drop-set"],
+  ["Спліт-присідання (нога позаду на підвищенні)","Rear Foot Elevated Split Squat",3,"10, 8, 6 на ногу","90 с","2020","Контроль руху"],
+  ["Румунська тяга з гантелями","Dumbbell Romanian Deadlift",3,"12, 10, 8","2 хв","3010","Активація сідниць і заднього ланцюга"],
+  ["Бічні зашагування (з вагою)","Lateral Step-Up (weighted)",3,"12 на ногу","90 с","2010","Акцент на бічний рух"],
+  ["Відведення стегна лежачи на боці","Side Lying Hip Abduction",3,"15 на бік","60 с","2020","Середня сідниця"]],
+ [["Жим штанги стоячи","Overhead Barbell Press",4,"10, 8, 6, 6","90 с","2010",""],
+  ["Жим Арнольда + махи в сторони (суперсерія)","Arnold Press + Side Lateral Raise (superset)",3,"10 + 12","60 с","2020","Активація плечей"],
+  ["Жим гантелей на похилій лаві","Incline Dumbbell Press",3,"12, 10, 8","90 с","3010",""],
+  ["Трицепсові віджимання","Triceps Push-Up",3,"12, 10, 8","60 с","контроль","З колін за потреби"],
+  ["Ролик для преса","Ab Wheel Rollout",3,"10","30 с","контроль","Максимальний контроль руху"]],
+ [["Гак-присідання","Hack Squat",5,"12, 10, 8, 6, 6","2 хв","3010","Максимальна глибина й техніка"],
+  ["Сісі-присідання","Sissy Squat",3,"12, 10, 8","90 с","3010","Передня поверхня стегна"],
+  ["Болгарські випади (акцент на стегна)","Bulgarian Split Squat (quads)",3,"12, 10, 8 на ногу","90 с","2020","Стабільність і повна амплітуда"],
+  ["Гоблет-присідання","Goblet Squat",3,"12, 10, 8","2 хв","3010",""],
+  ["Розгинання ніг у тренажері","Leg Extensions",2,"15","60 с","2010",""]],
+ [["Підтягування","Pull-Up",4,"10, 8, 6, 6","90 с","2010",""],
+  ["Тяга штанги + тяга прямими руками (суперсерія)","Barbell Row + Straight Arm Lat Pulldown (superset)",3,"10 + 12","90 с","3010/2010",""],
+  ["Тяга канату до обличчя","Face Pull",3,"15, 12, 10","60 с","2020",""],
+  ["Згинання рук «молоток» (з гантелями)","Hammer Curl (DB)",3,"12, 10, 8","90 с","2010","Варіація для біцепса"],
+  ["Російські скручування (з медболом)","Russian Twist (medicine ball)",3,"20 ротацій","30 с","контроль","Фокус на ротацію"]],
+ [["Румунська тяга","Romanian Deadlift",4,"10, 8, 6, 6","2 хв","3010","Активація заднього ланцюга"],
+  ["Сідничний міст однією ногою","Single Leg Hip Thrust",3,"12, 10, 8 на ногу","2 хв","3010","Інтенсивна варіація"],
+  ["Скандинавські згинання","Nordic Curl",3,"8, 6, 6","90 с","контроль","Фокус на хамстринги"],
+  ["Бічні випади (з медболом)","Side Lunge (medicine ball)",3,"12 на бік","60 с","2010","Контроль і стабільність"],
+  ["Махи гирею","Kettlebell Swing",3,"20","60 с","швидко",""]]
+]},
+{intro:"Тиждень 12 — фінал! Максимальна інтенсивність, бездоганна техніка, серії до відмови. Вичави з циклу все!", days:[
+ [["Сідничний міст зі штангою","Barbell Hip Thrust",5,"10, 8, 6, 6 + drop-set","2–3 хв","3010","Остання серія drop-set до відмови"],
+  ["Зашагування однією ногою (з гантелею)","Single Leg Step-Ups (DB)",3,"12, 10, 8 на ногу","90 с","2020","Стабільність і контроль"],
+  ["Румунська тяга","Romanian Deadlift",4,"12, 10, 8, 6","2 хв","3010","Активація заднього ланцюга"],
+  ["Відведення стегна на блоці","Cable Hip Abduction",3,"15 на бік","45 с","2010",""],
+  ["Відведення ноги на блоці","Cable Kickback",3,"15, 12, 10","60 с","2020","Повне скорочення"]],
+ [["Жим однією рукою стоячи","Overhead Press (single arm)",4,"10, 8, 6, 6","90 с","2010","Максимальний контроль"],
+  ["Жим Арнольда + махи в сторони (суперсерія)","Arnold Press + Side Lateral Raise (superset)",3,"10 + 12","60 с","2020","Активація плечей"],
+  ["Жим штанги на похилій лаві","Incline Barbell Bench Press",4,"12, 10, 8, 6","90 с","3010",""],
+  ["Віджимання на брусах з вагою","Weighted Dips",3,"12, 10, 8","60 с","контроль","Трицепс і груди"],
+  ["Підйом ніг у висі (з вагою)","Hanging Leg Raise (weighted)",3,"15","30 с","контроль","Сильніший кор"]],
+ [["Гак-присідання","Hack Squat",5,"12, 10, 8, 6, 6 + rest-pause","2 хв","3010","Максимальна глибина й техніка"],
+  ["Випади в русі","Walking Lunges",3,"12, 10, 8 на ногу","90 с","2010","Контрольований рух"],
+  ["Сісі-присідання","Sissy Squat",3,"12, 10, 8","90 с","3010","Передня поверхня стегна"],
+  ["Жим ногами","Leg Press",4,"15, 12, 10, 8","2 хв","3010",""],
+  ["Підйом ноги лежачи на боці","Side Lying Leg Raise",3,"20 на бік","30 с","2020",""]],
+ [["Підтягування","Pull-Up",5,"10, 8, 6, 6, 6","90 с","2010",""],
+  ["Тяга штанги в нахилі","Barbell Row",4,"12, 10, 8, 6","2 хв","3010",""],
+  ["Розведення на задні дельти","Rear Delt Fly",3,"15, 12, 10","60 с","2020","Задній пучок дельт"],
+  ["Згинання рук на похилій лаві","Incline Dumbbell Curl",3,"12, 10, 8","90 с","2010","Варіація для біцепса"],
+  ["Російські скручування (з медболом)","Russian Twist (medicine ball)",3,"20 ротацій","30 с","контроль","Ротація корпусу"]],
+ [["Румунська тяга","Romanian Deadlift",5,"10, 8, 6, 6, 6","2 хв","3010","Активація заднього ланцюга"],
+  ["Сідничний міст однією ногою","Single-Leg Hip Thrust",3,"12, 10, 8 на ногу","2 хв","3010","Інтенсивна варіація"],
+  ["Скандинавські згинання","Nordic Curl",3,"8, 6, 6","90 с","контроль","Фокус на хамстринги"],
+  ["Випади «реверанс» у Сміті","Smith Machine Curtsy Lunges",3,"12 на бік","60 с","2010","Контроль і стабільність"],
+  ["Махи гирею","Kettlebell Swing",3,"20","60 с","швидко",""]]
+]}
+];
+
+/* ==== СТАН ==== */
+var LS_KEY = "peachlab_v1";
+var STORAGE_OK = true;
+try{ localStorage.setItem("plab_probe","1"); localStorage.removeItem("plab_probe"); }catch(e){ STORAGE_OK = false; }
+var S = load();
+function load(){
+  try{ var s = JSON.parse(localStorage.getItem(LS_KEY)); if(s && s.log) return s; }catch(e){}
+  return {log:{}, sheetUrl:"", view:[0,0]};
+}
+function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }catch(e){} }
+function cellKey(w,d){ return w+"-"+d; }
+function getCell(w,d,make){
+  var k = cellKey(w,d);
+  if(!S.log[k] && make) S.log[k] = {date:"", ex:{}};
+  return S.log[k];
+}
+function getEx(w,d,i,make){
+  var c = getCell(w,d,make); if(!c) return null;
+  if(!c.ex[i] && make){ var n = P[w].days[d][i][2]; var arr=[]; for(var s=0;s<n;s++) arr.push(["",""]); c.ex[i]={s:arr,n:""}; }
+  return c.ex[i] || null;
+}
+function exHasData(e){
+  if(!e) return false;
+  if(e.n) return true;
+  for(var i=0;i<e.s.length;i++){ if(e.s[i][0]||e.s[i][1]) return true; }
+  return false;
+}
+function dayHasData(w,d){
+  var c = S.log[cellKey(w,d)]; if(!c) return false;
+  for(var k in c.ex){ if(exHasData(c.ex[k])) return true; }
+  return false;
+}
+function weekHasData(w){ for(var d=0;d<5;d++){ if(dayHasData(w,d)) return true; } return false; }
+
+/* ==== РЕНДЕР ==== */
+var $ = function(id){ return document.getElementById(id); };
+var curW = S.view[0]||0, curD = S.view[1]||0;
+
+function repTargets(ex){
+  var toks = String(ex[3]).split(",").map(function(t){return t.trim();}).filter(Boolean);
+  var out = [];
+  for(var i=0;i<ex[2];i++){
+    var t = toks.length===1 ? toks[0] : (toks[i]!==undefined ? toks[i] : toks[toks.length-1]);
+    out.push(t);
+  }
+  return out;
+}
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+function renderWeeks(){
+  var h = "";
+  for(var w=0; w<12; w++){
+    h += '<button class="wchip'+(w===curW?" on":"")+(weekHasData(w)?" has":"")+'" data-w="'+w+'">Т'+(w+1)+'<span class="dot"></span></button>';
+  }
+  $("weeks").innerHTML = h;
+}
+function renderDays(){
+  var h = "";
+  for(var d=0; d<6; d++){
+    var cc = S.log[cellKey(curW,d)];
+    var lockedD = d<5 && cc && cc.locked;
+    var done = d<5 && !lockedD && dayHasData(curW,d);
+    h += '<button class="dtab'+(d===curD?" on":"")+(done?" done":"")+(lockedD?" lockd":"")+'" data-d="'+d+'">'+
+         '<span class="dl">'+DAY_META[d][0]+'</span><span class="dm">'+DAY_META[d][1].split(":")[0].split("+")[0].trim()+'</span></button>';
+  }
+  $("days").innerHTML = h;
+}
+function prevResult(w,d,i){
+  var en = P[w].days[d][i][1];
+  var best = null, bestOrd = -1, cur = w*10+d;
+  for(var ww=0; ww<12; ww++) for(var dd=0; dd<5; dd++){
+    var ord = ww*10+dd;
+    if(ord >= cur) continue;
+    var day = P[ww].days[dd];
+    for(var ii=0; ii<day.length; ii++){
+      if(day[ii][1] !== en) continue;
+      var e = S.log[cellKey(ww,dd)] && S.log[cellKey(ww,dd)].ex[ii];
+      if(exHasData(e) && ord > bestOrd){ bestOrd = ord; best = {e:e, w:ww, d:dd}; }
+    }
+  }
+  if(!best) return "";
+  var parts = [];
+  for(var s=0; s<best.e.s.length; s++){
+    var wt = best.e.s[s][0], r = best.e.s[s][1];
+    if(wt || r) parts.push((wt||"—")+"×"+(r||"—"));
+  }
+  if(!parts.length) return "";
+  var dt = S.log[cellKey(best.w,best.d)].date;
+  var lbl = dt ? fmtDate(dt) : "Т"+(best.w+1)+" "+DAY_META[best.d][0];
+  return 'Минулого разу <b>('+esc(lbl)+')</b>: '+esc(parts.join(" · "));
+}
+function fmtDate(iso){
+  var p = iso.split("-");
+  return p.length===3 ? p[2]+"."+p[1]+"."+p[0] : iso;
+}
+function renderPanel(){
+  var el = $("panel");
+  if(curD === 5){
+    el.innerHTML =
+      '<div class="resthead">Субота — кардіо та мобільність</div>'+
+      '<div class="card">30–40 хв легкого кардіо (ходьба в нахилі, велосипед, сходи) + розтяжка й мобільність стегон. За бажанням — повний відпочинок.</div>'+
+      '<div class="resthead">Неділя — відпочинок</div>'+
+      '<div class="card">Активне відновлення: прогулянка, розтяжка, сон і їжа. Наступний тиждень чекає 🍑</div>';
+    return;
+  }
+  var wk = P[curW], day = wk.days[curD];
+  var cell = S.log[cellKey(curW,curD)] || {date:"", ex:{}};
+  var locked = !!cell.locked;
+  var dis = locked ? " disabled" : "";
+  var h = '';
+  if(curD===0 && wk.intro) h += '<div class="intro">'+esc(wk.intro)+'</div>';
+  h += '<div class="dayhead"><h2>Тиждень '+(curW+1)+' · '+DAY_META[curD][0]+' — '+esc(DAY_META[curD][1])+'</h2>'+
+       '<label class="datebox">Дата <input type="date" id="dayDate" value="'+esc(cell.date||"")+'"'+dis+'></label></div>';
+  if(locked) h += '<div class="lockbanner">🔒 <span>Тренування завершено'+(cell.date?' '+fmtDate(cell.date):'')+' і збережено. Записи захищені від змін.</span></div>';
+  if(locked) h += '<div class="locked">';
+  for(var i=0; i<day.length; i++){
+    var ex = day[i], t = repTargets(ex);
+    var e = cell.ex[i];
+    h += '<div class="card">'+
+      '<div class="exname">'+(i+1)+'. '+esc(ex[0])+'</div>'+
+      '<div class="exen">'+esc(ex[1])+'</div>'+
+      '<div class="exmeta"><span class="m">'+ex[2]+' серій</span><span class="m">повтори: '+esc(ex[3])+'</span><span class="m">пауза '+esc(ex[4])+'</span><span class="m">темп '+esc(ex[5])+'</span></div>'+
+      (ex[6] ? '<div class="plannote">'+esc(ex[6])+'</div>' : '');
+    var pv = prevResult(curW,curD,i);
+    if(pv) h += '<div class="prev">'+pv+'</div>';
+    h += '<div class="sets">';
+    for(var s=0; s<ex[2]; s++){
+      var v = e && e.s[s] ? e.s[s] : ["",""];
+      h += '<div class="setrow">'+
+        '<span class="setlab">Сет <b>'+(s+1)+'</b> · '+esc(t[s])+'</span>'+
+        '<input inputmode="decimal" placeholder="вага, кг" aria-label="Вага, сет '+(s+1)+'" data-ex="'+i+'" data-set="'+s+'" data-f="0" value="'+esc(v[0])+'" class="'+(v[0]?"filled":"")+'"'+dis+'>'+
+        '<input inputmode="numeric" placeholder="повтори" aria-label="Повтори, сет '+(s+1)+'" data-ex="'+i+'" data-set="'+s+'" data-f="1" value="'+esc(v[1])+'" class="'+(v[1]?"filled":"")+'"'+dis+'>'+
+      '</div>';
+    }
+    h += '</div>'+
+      '<input class="exnote" placeholder="Нотатка (як пішло, техніка, біль...)" data-ex="'+i+'" data-note="1" value="'+esc(e&&e.n?e.n:"")+'"'+dis+'>'+
+    '</div>';
+  }
+  if(locked){
+    h += '</div>';
+  } else {
+    h += '<button class="finishbtn" id="finishDay">✅ Завершити тренування і зберегти</button>'+
+         '<div class="muted" style="font-size:13px">Після збереження записи цього дня буде заблоковано — змінити їх буде неможливо.</div>'+
+         '<button class="clearday" id="clearDay">Очистити записи цього дня</button>';
+  }
+  el.innerHTML = h;
+}
+function renderAll(){ renderWeeks(); renderDays(); renderPanel(); }
+
+/* ==== ПОДІЇ ==== */
+$("weeks").addEventListener("click", function(ev){
+  var b = ev.target.closest(".wchip"); if(!b) return;
+  curW = +b.dataset.w; S.view=[curW,curD]; save(); renderAll();
+  window.scrollTo({top:0});
+});
+$("days").addEventListener("click", function(ev){
+  var b = ev.target.closest(".dtab"); if(!b) return;
+  curD = +b.dataset.d; S.view=[curW,curD]; save(); renderAll();
+});
+$("panel").addEventListener("input", function(ev){
+  var t = ev.target;
+  var cc = S.log[cellKey(curW,curD)];
+  if(cc && cc.locked) return;
+  if(t.id === "dayDate"){ getCell(curW,curD,true).date = t.value; save(); return; }
+  if(t.dataset.note){ getEx(curW,curD,+t.dataset.ex,true).n = t.value; save(); return; }
+  if(t.dataset.f !== undefined && t.dataset.ex !== undefined){
+    var e = getEx(curW,curD,+t.dataset.ex,true);
+    e.s[+t.dataset.set][+t.dataset.f] = t.value.trim();
+    t.classList.toggle("filled", !!t.value.trim());
+    var c = getCell(curW,curD,true);
+    if(!c.date && t.value.trim()){
+      var now = new Date();
+      c.date = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0");
+      var di = $("dayDate"); if(di) di.value = c.date;
+    }
+    save();
+  }
+});
+/* Подвійне натискання замість системного confirm() — вбудовані переглядачі його блокують */
+var armTimer = null;
+function armOrRun(btn, armedText, fn){
+  if(btn.dataset.armed){
+    clearTimeout(armTimer); delete btn.dataset.armed; fn(); return;
+  }
+  btn.dataset.armed = "1";
+  btn.dataset.orig = btn.textContent;
+  btn.textContent = armedText;
+  armTimer = setTimeout(function(){
+    delete btn.dataset.armed;
+    btn.textContent = btn.dataset.orig || btn.textContent;
+  }, 6000);
+}
+$("panel").addEventListener("click", function(ev){
+  if(ev.target.id === "clearDay"){
+    var c0 = S.log[cellKey(curW,curD)];
+    if(c0 && c0.locked) return;
+    armOrRun(ev.target, "Точно очистити всі записи? Натисни ще раз", function(){
+      delete S.log[cellKey(curW,curD)]; save(); renderAll();
+    });
+  }
+  if(ev.target.id === "finishDay"){
+    if(!dayHasData(curW,curD)){ toast("Спочатку внеси хоча б один запис 🙂"); return; }
+    armOrRun(ev.target, "Зберегти НАЗАВЖДИ без можливості змін? Натисни ще раз 🔒", function(){
+      var c = getCell(curW,curD,true);
+      c.locked = true;
+      if(!c.date){
+        var now = new Date();
+        c.date = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0");
+      }
+      save(); renderAll(); toast("Тренування збережено 🔒");
+    });
+  }
+});
+$("panel").addEventListener("change", function(){ renderDays(); renderWeeks(); });
+
+/* ==== ЕКСПОРТ ==== */
+function toast(msg){
+  var t = $("toast"); t.textContent = msg; t.classList.add("show");
+  setTimeout(function(){ t.classList.remove("show"); }, 2200);
+}
+function buildTSV(){
+  var rows = [["Дата","Тиждень","День","Тренування","Вправа","Вправа (EN)","Сет","Вага (кг)","Повторення","Нотатка"]];
+  var entries = [];
+  for(var w=0; w<12; w++) for(var d=0; d<5; d++){
+    var c = S.log[cellKey(w,d)]; if(!c) continue;
+    entries.push({w:w,d:d,c:c});
+  }
+  entries.sort(function(a,b){
+    var da = a.c.date||"9999", db = b.c.date||"9999";
+    if(da!==db) return da<db?-1:1;
+    return (a.w*10+a.d)-(b.w*10+b.d);
+  });
+  entries.forEach(function(en){
+    var day = P[en.w].days[en.d];
+    for(var i=0; i<day.length; i++){
+      var e = en.c.ex[i]; if(!exHasData(e)) continue;
+      for(var s=0; s<e.s.length; s++){
+        var wt = e.s[s][0], r = e.s[s][1];
+        if(!wt && !r) continue;
+        rows.push([
+          en.c.date ? fmtDate(en.c.date) : "",
+          en.w+1,
+          DAY_META[en.d][0],
+          DAY_META[en.d][1],
+          day[i][0],
+          day[i][1],
+          s+1,
+          String(wt).replace(".", ","),
+          r,
+          (s===0 ? (e.n||"") : "")
+        ]);
+      }
+    }
+  });
+  return rows.map(function(r){
+    return r.map(function(x){ return String(x).replace(/[\t\n]/g," "); }).join("\t");
+  }).join("\n");
+}
+function copyText(txt, okMsg){
+  function fallback(){
+    var ta = $("ioArea");
+    var det = ta.closest("details"); if(det) det.open = true;
+    ta.value = txt; ta.focus(); ta.select();
+    try{ document.execCommand("copy"); toast(okMsg); }
+    catch(e){ toast("Скопіюй текст із поля внизу вручну"); }
+  }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){ toast(okMsg); }, fallback);
+  } else fallback();
+}
+$("copyTsv").addEventListener("click", function(){
+  var tsv = buildTSV();
+  if(tsv.indexOf("\n") < 0){ toast("Поки що немає записів 🙂"); return; }
+  copyText(tsv, "Журнал скопійовано ✓ Встав у таблицю (A1)");
+});
+$("expJson").addEventListener("click", function(){
+  copyText(JSON.stringify(S), "Копію даних скопійовано ✓");
+});
+$("impJson").addEventListener("click", function(ev){
+  var v = $("ioArea").value.trim();
+  if(!v){ toast("Спочатку встав копію даних у поле нижче"); return; }
+  var s;
+  try{ s = JSON.parse(v); if(!s.log) throw 0; }
+  catch(e){ toast("Це не схоже на копію даних 🤔"); return; }
+  armOrRun(ev.target, "Замінити поточні дані? Натисни ще раз", function(){
+    S = s; save(); curW=S.view[0]||0; curD=S.view[1]||0; renderAll(); toast("Дані відновлено ✓");
+  });
+});
+if(!STORAGE_OK){
+  var warn = document.createElement("div");
+  warn.className = "intro";
+  warn.style.borderColor = "var(--accent)";
+  warn.innerHTML = "⚠️ <b>Цей перегляд не зберігає записи між відкриттями.</b> Відкрий трекер у звичайному браузері (Safari або Chrome) за постійним посиланням — там усе зберігатиметься. Якщо попередження з'являється і в браузері — напиши мені, перенесу трекер на окремий сайт.";
+  document.querySelector("header.top").appendChild(warn);
+}
+renderAll();
+</script>
+
+</body>
+</html>
