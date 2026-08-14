@@ -169,6 +169,16 @@
     <h3>Твої дані</h3>
     <p>Усі записи зберігаються <b>прямо в додатку</b> (у пам'яті браузера цього пристрою) — нічого нікуди надсилати не потрібно. Тренування розписані на 12 тижнів і не повторюються, тож журнал повний і без дублів.</p>
     <details>
+      <summary>☁️ Google Таблиця — автозбереження історії</summary>
+      <div class="muted" id="syncStatus" style="margin-top:8px">Не підключено.</div>
+      <div class="btnrow" style="margin-top:8px">
+        <button class="btn btn-a" id="syncNow">Синхронізувати зараз</button>
+        <button class="btn btn-b" id="restoreSheet">Відновити з таблиці</button>
+      </div>
+      <input class="exnote" id="sheetUrlInput" placeholder="Посилання на веб-додаток (https://script.google.com/macros/s/.../exec)" style="margin-top:9px">
+      <div class="muted" style="margin-top:6px">Після кожного збереженого тренування історія вивантажується в таблицю автоматично. Як підключити — 5 кроків у файлі <b>apps-script/README.md</b> у репозиторії.</div>
+    </details>
+    <details>
       <summary>Резервна копія / перенесення на інший пристрій</summary>
       <div class="btnrow" style="margin-top:8px">
         <button class="btn btn-b" id="expJson">Скопіювати копію даних</button>
@@ -851,7 +861,7 @@ function onPanelInput(ev){
       mm.d = nd.getFullYear()+"-"+String(nd.getMonth()+1).padStart(2,"0")+"-"+String(nd.getDate()).padStart(2,"0");
       var mdi = $("measDate"); if(mdi) mdi.value = mm.d;
     }
-    save(); renderDays(); renderWeeks(); return;
+    save(); renderDays(); renderWeeks(); syncSoon(); return;
   }
   var cc = S.log[cellKey(curW,curD)];
   if(cc && cc.locked) return;
@@ -912,6 +922,7 @@ $("panel").addEventListener("click", function(ev){
         c.date = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0");
       }
       save(); renderAll(); toast("Тренування збережено 🔒");
+      syncSheet(true);
     });
   }
 });
@@ -986,6 +997,118 @@ function buildMeasTSV(){
     return r.map(function(x){ return String(x).replace(/[\t\n]/g," "); }).join("\t");
   }).join("\n");
 }
+/* ==== СИНХРОНІЗАЦІЯ З GOOGLE ТАБЛИЦЕЮ ==== */
+/* Трекер готує всі рядки сам (тут живе програма тренувань), скрипт у таблиці лише пише і форматує. */
+function buildSyncPayload(){
+  var journal = { header:["Дата","Тиждень","День","Тренування","Вправа","Вправа (EN)","Сет","Вага (кг)","Повторення","Нотатка"], rows:[] },
+      weeks = [], meas = { header:["Тиждень","Дата","Вага (кг)","Талія (см)","Живіт (см)","Попа (см)","Нога (см)"], rows:[] },
+      wkHeader = ["Дата","День","Вправа","Сет","Вага (кг)","Повторення","Нотатка"];
+  var num = function(x){ return String(x==null?"":x).replace(".", ","); };
+
+  for(var w=0; w<12; w++){
+    var wkRows = [];
+    for(var d=0; d<5; d++){
+      var c = S.log[cellKey(w,d)]; if(!c) continue;
+      var day = P[w].days[d], dt = c.date ? fmtDate(c.date) : "";
+      for(var i=0; i<day.length; i++){
+        var e = c.ex[i]; if(!exHasData(e)) continue;
+        for(var s=0; s<e.s.length; s++){
+          var wt = e.s[s][0], r = e.s[s][1];
+          if(!wt && !r) continue;
+          var note = s===0 ? (e.n||"") : "";
+          journal.rows.push([dt, w+1, DAY_META[d][0], DAY_META[d][1], day[i][0], day[i][1], s+1, num(wt), r, note]);
+          wkRows.push([dt, DAY_META[d][0], day[i][0], s+1, num(wt), r, note]);
+        }
+      }
+      if(runHasData(c.run)){
+        journal.rows.push([dt, w+1, DAY_META[d][0], DAY_META[d][1], "Пробіжка", c.run.surf||"", 1, "", num(c.run.km), ""]);
+        wkRows.push([dt, DAY_META[d][0], "Пробіжка ("+(c.run.surf||"—")+")", 1, "", num(c.run.km), ""]);
+      }
+    }
+    var m = getMeas(w);
+    if(measHasData(m)){
+      meas.rows.push(["Т"+(w+1), m.d?fmtDate(m.d):""].concat(MEAS_FIELDS.map(function(f){ return num(m[f[0]]); })));
+      wkRows.push([m.d?fmtDate(m.d):"", "Заміри", "Вага/талія/живіт/попа/нога", "",
+        num(m.w), MEAS_FIELDS.slice(1).map(function(f){ return num(m[f[0]]); }).join(" / "), ""]);
+    }
+    if(wkRows.length) weeks.push({ name:"Тиждень "+(w+1), header:wkHeader, rows:wkRows });
+  }
+  journal.rows.sort(function(a,b){ return (a[1]-b[1]) || 0; });
+
+  /* Прогрес вправ: максимальна вага (або повтори) кожної вправи по тижнях */
+  var prog = {}, order = [];
+  for(var w2=0; w2<12; w2++) for(var d2=0; d2<5; d2++){
+    var c2 = S.log[cellKey(w2,d2)]; if(!c2) continue;
+    var day2 = P[w2].days[d2];
+    for(var i2=0; i2<day2.length; i2++){
+      var e2 = c2.ex[i2]; if(!exHasData(e2)) continue;
+      var key = canonEx(day2[i2][1]), ua = day2[i2][0];
+      if(!prog[key]){ prog[key] = { ua:ua, cells:[] }; order.push(key); }
+      var bw = null, br = null;
+      for(var s2=0; s2<e2.s.length; s2++){
+        var wn = parseFloat(String(e2.s[s2][0]).replace(",", ".")), rn = parseFloat(String(e2.s[s2][1]).replace(",", "."));
+        if(!isNaN(wn) && (bw===null || wn>bw)) bw = wn;
+        if(!isNaN(rn) && (br===null || rn>br)) br = rn;
+      }
+      var val = bw!==null ? num(bw) : (br!==null ? br+" повт." : "");
+      if(val) prog[key].cells[w2] = val;
+    }
+  }
+  var progress = { header:["Вправа"], rows:[] };
+  for(var w3=0; w3<12; w3++) progress.header.push("Т"+(w3+1));
+  order.forEach(function(k){
+    var row = [prog[k].ua];
+    for(var w4=0; w4<12; w4++) row.push(prog[k].cells[w4] || "");
+    progress.rows.push(row);
+  });
+
+  return { journal:journal, weeks:weeks, meas:meas, progress:progress, backup:JSON.stringify(S) };
+}
+function fmtSyncAt(iso){
+  if(!iso) return "";
+  var d = new Date(iso);
+  if(isNaN(d.getTime())) return "";
+  var p = function(x){ return String(x).padStart(2,"0"); };
+  return p(d.getDate())+"."+p(d.getMonth()+1)+"."+d.getFullYear()+" "+p(d.getHours())+":"+p(d.getMinutes());
+}
+function renderSyncStatus(){
+  var el = $("syncStatus"); if(!el) return;
+  if(!(S.sheetUrl||"").trim()){ el.textContent = "Не підключено — встав посилання на веб-додаток нижче."; return; }
+  if(S.syncPending){ el.textContent = "⚠️ Останню синхронізацію не завершено — натисни «Синхронізувати зараз»."; return; }
+  el.textContent = S.syncAt ? "Востаннє синхронізовано: "+fmtSyncAt(S.syncAt) : "Підключено. Ще жодної синхронізації.";
+}
+function syncSheet(silent){
+  var url = (S.sheetUrl||"").trim();
+  if(!url){ if(!silent) toast("Спочатку встав посилання на веб-додаток"); return; }
+  var body = JSON.stringify(buildSyncPayload());
+  if(!silent) toast("Надсилаю в таблицю…");
+  function ok(msg){
+    S.syncAt = new Date().toISOString(); S.syncPending = false; save(); renderSyncStatus();
+    if(!silent) toast(msg);
+  }
+  function fail(){
+    S.syncPending = true; save(); renderSyncStatus();
+    if(!silent) toast("Не вдалося надіслати — перевір посилання та інтернет");
+  }
+  fetch(url, { method:"POST", body:body })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if(res && res.ok) ok("Дані в таблиці ✓");
+      else throw new Error(res && res.error ? res.error : "невідома відповідь");
+    })
+    .catch(function(){
+      /* Деякі браузери не дають прочитати відповідь Apps Script — надсилаємо без підтвердження */
+      fetch(url, { method:"POST", mode:"no-cors", body:body })
+        .then(function(){ ok("Надіслано в таблицю ✓"); })
+        .catch(fail);
+    });
+}
+var syncTimer = null;
+function syncSoon(){
+  if(!(S.sheetUrl||"").trim()) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(function(){ syncSheet(true); }, 2500);
+}
 function copyText(txt, okMsg){
   function fallback(){
     var ta = $("ioArea");
@@ -1021,6 +1144,32 @@ $("impJson").addEventListener("click", function(ev){
     S = s; save(); curW=S.view[0]||0; curD=S.view[1]||0; renderAll(); toast("Дані відновлено ✓");
   });
 });
+$("sheetUrlInput").value = S.sheetUrl || "";
+$("sheetUrlInput").addEventListener("input", function(){
+  S.sheetUrl = this.value.trim(); save(); renderSyncStatus();
+});
+$("syncNow").addEventListener("click", function(){ syncSheet(false); });
+$("restoreSheet").addEventListener("click", function(ev){
+  var url = (S.sheetUrl||"").trim();
+  if(!url){ toast("Спочатку встав посилання на веб-додаток"); return; }
+  armOrRun(ev.target, "Замінити дані на пристрої тими, що в таблиці? Натисни ще раз", function(){
+    toast("Завантажую з таблиці…");
+    fetch(url).then(function(r){ return r.json(); }).then(function(res){
+      if(!res || !res.ok) throw new Error(res && res.error ? res.error : "порожня відповідь");
+      var s = JSON.parse(res.data);
+      if(!s || !s.log) throw new Error("копія пошкоджена");
+      S = s; save();
+      curW = (S.view&&S.view[0])||0; curD = (S.view&&S.view[1])||0;
+      $("sheetUrlInput").value = S.sheetUrl || url;
+      if(!S.sheetUrl){ S.sheetUrl = url; save(); }
+      renderAll(); renderSyncStatus(); toast("Дані відновлено з таблиці ✓");
+    }).catch(function(err){
+      toast("Не вдалося відновити: "+(err && err.message ? err.message : "помилка"));
+    });
+  });
+});
+renderSyncStatus();
+if(S.syncPending) syncSoon();
 if(!STORAGE_OK){
   var warn = document.createElement("div");
   warn.className = "intro";
