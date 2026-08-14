@@ -100,6 +100,9 @@
   .toast.show{opacity:1}
   @media (prefers-reduced-motion: reduce){ .toast{transition:none} }
   .clearday{margin:6px 0 0; background:none; border:none; color:var(--muted); font:inherit; font-size:13px; cursor:pointer; text-decoration:underline; padding:4px 0}
+  .unlockbtn{margin-left:auto; flex:0 0 auto; background:none; border:1px solid currentColor; color:inherit;
+    border-radius:999px; padding:5px 11px; font:inherit; font-size:13px; font-weight:600; cursor:pointer; opacity:.85}
+  .unlockbtn:hover{opacity:1}
   .finishbtn{display:block; width:100%; margin:16px 0 4px; background:var(--done); color:#fff; border:none; border-radius:14px;
     padding:14px 16px; font:inherit; font-weight:700; font-size:16px; cursor:pointer}
   .lockbanner{display:flex; gap:8px; align-items:center; background:var(--done-soft); color:var(--ink); border:1px solid var(--done);
@@ -907,7 +910,8 @@ function renderPanel(){
   if(curD===0 && wk.intro) h += '<div class="intro">'+esc(wk.intro)+'</div>';
   h += '<div class="dayhead"><h2>Тиждень '+(curW+1)+' · '+DAY_META[curD][0]+' — '+esc(DAY_META[curD][1])+'</h2>'+
        '<label class="datebox">Дата <input type="date" id="dayDate" value="'+esc(cell.date||"")+'"'+dis+'></label></div>';
-  if(locked) h += '<div class="lockbanner">🔒 <span>Тренування завершено'+(cell.date?' '+fmtDate(cell.date):'')+' і збережено. Записи захищені від змін.</span></div>';
+  if(locked) h += '<div class="lockbanner">🔒 <span>Тренування завершено'+(cell.date?' '+fmtDate(cell.date):'')+' і збережено.</span>'+
+    '<button class="unlockbtn" id="unlockDay">Розблокувати</button></div>';
   if(locked) h += '<div class="locked">';
   for(var i=0; i<day.length; i++){
     var ex = day[i], t = repTargets(ex);
@@ -948,7 +952,7 @@ function renderPanel(){
     h += '</div>';
   } else {
     h += '<button class="finishbtn" id="finishDay">✅ Завершити тренування і зберегти</button>'+
-         '<div class="muted" style="font-size:13px">Після збереження записи цього дня буде заблоковано — змінити їх буде неможливо.</div>'+
+         '<div class="muted" style="font-size:13px">Після збереження записи цього дня буде заблоковано — змінити їх можна буде лише після розблокування.</div>'+
          '<button class="clearday" id="clearDay">Очистити записи цього дня</button>';
   }
   el.innerHTML = h;
@@ -1035,9 +1039,16 @@ $("panel").addEventListener("click", function(ev){
       delete S.log[cellKey(curW,curD)]; save(); renderAll();
     });
   }
+  if(ev.target.id === "unlockDay"){
+    armOrRun(ev.target, "Ще раз?", function(){
+      var cu = getCell(curW,curD,true);
+      cu.locked = false; save(); renderAll();
+      toast("День розблоковано — можна редагувати ✏️");
+    });
+  }
   if(ev.target.id === "finishDay"){
     if(!dayHasData(curW,curD)){ toast("Спочатку внеси хоча б один запис 🙂"); return; }
-    armOrRun(ev.target, "Зберегти НАЗАВЖДИ без можливості змін? Натисни ще раз 🔒", function(){
+    armOrRun(ev.target, "Зберегти і заблокувати день? Натисни ще раз 🔒", function(){
       var c = getCell(curW,curD,true);
       c.locked = true;
       if(!c.date){
