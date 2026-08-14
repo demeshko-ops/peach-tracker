@@ -70,6 +70,17 @@
     border-radius:10px; padding:9px 10px; font:inherit; font-size:16px; font-variant-numeric:tabular-nums}
   .setrow input:focus, .exnote:focus, .datebox input:focus, button:focus-visible, textarea:focus{outline:2px solid var(--accent); outline-offset:1px}
   .setrow input.filled{border-color:var(--done); background:var(--done-soft)}
+  .mrow{display:grid; grid-template-columns:104px 1fr; gap:7px; align-items:center; margin-top:7px}
+  .mrow .setlab{font-size:14px}
+  .runrow{display:grid; grid-template-columns:1fr 1.25fr; gap:7px; align-items:center; margin-top:9px}
+  .mrow input, .runrow input, .runrow select{width:100%; border:1px solid var(--line); background:var(--bg); color:var(--ink);
+    border-radius:10px; padding:9px 10px; font:inherit; font-size:16px; font-variant-numeric:tabular-nums}
+  .mrow input.filled, .runrow input.filled, .runrow select.filled{border-color:var(--done); background:var(--done-soft)}
+  .mrow input:focus, .runrow input:focus, .runrow select:focus{outline:2px solid var(--accent); outline-offset:1px}
+  .histrow{display:flex; justify-content:space-between; gap:10px; padding:6px 0; border-bottom:1px solid var(--line); font-size:13.5px; font-variant-numeric:tabular-nums}
+  .histrow:last-child{border-bottom:none}
+  .histrow .hw{color:var(--muted); flex:0 0 auto}
+  .histsum{margin-top:10px; font-size:13.5px; font-weight:600; color:var(--accent-ink); background:var(--accent-soft); border-radius:10px; padding:7px 10px}
   .exnote{width:100%; margin-top:9px; border:1px solid var(--line); background:var(--bg); color:var(--ink);
     border-radius:10px; padding:8px 10px; font:inherit; font-size:14px}
   .resthead{font-family:Georgia,serif; font-size:20px; margin:18px 0 6px}
@@ -121,9 +132,11 @@
   .wchip.on{background:var(--accent); border-color:var(--accent); color:var(--on-accent)}
   .dtab.on{background:var(--accent-soft); border-color:var(--accent)}
   .dtab .dm{color:#CDBAC4}
-  .setrow input, .exnote, .datebox input{background:rgba(0,0,0,.28); border-color:rgba(255,255,255,.17); color:var(--ink)}
-  .setrow input.filled{background:var(--done-soft); border-color:rgba(151,203,165,.60)}
-  .setrow input::placeholder, .exnote::placeholder{color:rgba(251,247,248,.38)}
+  .setrow input, .exnote, .datebox input, .mrow input, .runrow input, .runrow select{background:rgba(0,0,0,.28); border-color:rgba(255,255,255,.17); color:var(--ink)}
+  .setrow input.filled, .mrow input.filled, .runrow input.filled, .runrow select.filled{background:var(--done-soft); border-color:rgba(151,203,165,.60)}
+  .setrow input::placeholder, .exnote::placeholder, .mrow input::placeholder, .runrow input::placeholder{color:rgba(251,247,248,.38)}
+  .runrow select option{background:#2E3134; color:#FBF7F8}
+  .histrow .hw{color:#CDBAC4}
   .setlab{color:#CDBAC4}
   .m{color:#F2E7EC}
   .prev{display:block; background:var(--lotus-soft); color:#F9BFD8; border-radius:10px; padding:6px 10px; border:1px solid rgba(244,143,184,.28)}
@@ -168,6 +181,7 @@
       <summary>Експорт журналу (для аналізу та графіків)</summary>
       <div class="btnrow" style="margin-top:8px">
         <button class="btn btn-b" id="copyTsv">📋 Скопіювати журнал таблицею</button>
+        <button class="btn btn-b" id="copyMeas">📏 Скопіювати заміри таблицею</button>
       </div>
       <div class="muted">Копіює всі записи у табличному форматі — знадобиться наприкінці програми для графіків прогресу.</div>
     </details>
@@ -572,6 +586,25 @@ function getEx(w,d,i,make){
   if(!c.ex[i] && make){ var n = P[w].days[d][i][2]; var arr=[]; for(var s=0;s<n;s++) arr.push(["",""]); c.ex[i]={s:arr,n:""}; }
   return c.ex[i] || null;
 }
+/* Пробіжка дня: {km, surf} у клітинці дня. Старі записи без run працюють як раніше. */
+function getRun(w,d,make){
+  var c = getCell(w,d,make); if(!c) return null;
+  if(!c.run && make) c.run = {km:"", surf:""};
+  return c.run || null;
+}
+function runHasData(r){ return !!(r && (r.km || r.surf)); }
+/* Заміри тижня: S.meas[w] = {d,w,t,zh,p,n}. Ключ необов'язковий — старі копії даних сумісні. */
+var MEAS_FIELDS = [["w","Вага","кг"],["t","Талія","см"],["zh","Живіт","см"],["p","Попа","см"],["n","Нога","см"]];
+function getMeas(w,make){
+  if(!S.meas){ if(!make) return null; S.meas = {}; }
+  if(!S.meas[w] && make) S.meas[w] = {d:"", w:"", t:"", zh:"", p:"", n:""};
+  return S.meas[w] || null;
+}
+function measHasData(m){
+  if(!m) return false;
+  for(var i=0;i<MEAS_FIELDS.length;i++){ if(m[MEAS_FIELDS[i][0]]) return true; }
+  return false;
+}
 function exHasData(e){
   if(!e) return false;
   if(e.n) return true;
@@ -580,10 +613,14 @@ function exHasData(e){
 }
 function dayHasData(w,d){
   var c = S.log[cellKey(w,d)]; if(!c) return false;
+  if(runHasData(c.run)) return true;
   for(var k in c.ex){ if(exHasData(c.ex[k])) return true; }
   return false;
 }
-function weekHasData(w){ for(var d=0;d<5;d++){ if(dayHasData(w,d)) return true; } return false; }
+function weekHasData(w){
+  for(var d=0;d<5;d++){ if(dayHasData(w,d)) return true; }
+  return measHasData(getMeas(w));
+}
 
 /* ==== РЕНДЕР ==== */
 var $ = function(id){ return document.getElementById(id); };
@@ -669,14 +706,64 @@ function fmtDate(iso){
   var p = iso.split("-");
   return p.length===3 ? p[2]+"."+p[1]+"."+p[0] : iso;
 }
+var RUN_SURFACES = ["терен","бігова доріжка","шосе"];
+function measLine(m){
+  var parts = [];
+  for(var i=0;i<MEAS_FIELDS.length;i++){
+    var f = MEAS_FIELDS[i], v = m[f[0]];
+    if(v) parts.push((i===0? v+" "+f[2] : f[1].toLowerCase()+" "+v));
+  }
+  return parts.join(" · ");
+}
+function prevMeasBlock(w){
+  var best = null;
+  for(var ww=0; ww<w; ww++){ var m = getMeas(ww); if(measHasData(m)) best = {m:m, w:ww}; }
+  if(!best) return "";
+  var lbl = best.m.d ? fmtDate(best.m.d) : "";
+  return '<div class="prev">Минулого разу <b>(Т'+(best.w+1)+(lbl?" · "+esc(lbl):"")+')</b>: '+esc(measLine(best.m))+'</div>';
+}
+function measHistory(){
+  var rows = [], all = [];
+  for(var ww=0; ww<12; ww++){
+    var m = getMeas(ww); if(!measHasData(m)) continue;
+    all.push({m:m, w:ww});
+    rows.push('<div class="histrow"><span class="hw">Т'+(ww+1)+(m.d?" · "+esc(fmtDate(m.d)):"")+'</span><span>'+esc(measLine(m))+'</span></div>');
+  }
+  if(!rows.length) return "";
+  var sum = "";
+  if(all.length > 1){
+    var a = all[0].m, b = all[all.length-1].m, deltas = [];
+    for(var i=0;i<MEAS_FIELDS.length;i++){
+      var f = MEAS_FIELDS[i];
+      var x = parseFloat(String(a[f[0]]).replace(",",".")), y = parseFloat(String(b[f[0]]).replace(",","."));
+      if(isNaN(x) || isNaN(y)) continue;
+      var dv = Math.round((y-x)*10)/10;
+      deltas.push(f[1]+" "+(dv>0?"+":dv<0?"−":"")+String(Math.abs(dv)).replace(".",",")+" "+f[2]);
+    }
+    if(deltas.length) sum = '<div class="histsum">Від старту (Т'+(all[0].w+1)+' → Т'+(all[all.length-1].w+1)+'): '+esc(deltas.join(" · "))+'</div>';
+  }
+  return '<div class="card">'+rows.join("")+sum+'</div>';
+}
 function renderPanel(){
   var el = $("panel");
   if(curD === 5){
-    el.innerHTML =
-      '<div class="resthead">Субота — кардіо та мобільність</div>'+
+    var m = getMeas(curW) || {d:"",w:"",t:"",zh:"",p:"",n:""};
+    var mh = '<div class="resthead">Субота — кардіо та мобільність</div>'+
       '<div class="card">30–40 хв легкого кардіо (ходьба в нахилі, велосипед, сходи) + розтяжка й мобільність стегон. За бажанням — повний відпочинок.</div>'+
       '<div class="resthead">Неділя — відпочинок</div>'+
-      '<div class="card">Активне відновлення: прогулянка, розтяжка, сон і їжа. Наступний тиждень чекає 🍑</div>';
+      '<div class="card">Активне відновлення: прогулянка, розтяжка, сон і їжа. Наступний тиждень чекає 🍑</div>'+
+      '<div class="resthead">📏 Заміри тижня '+(curW+1)+'</div>'+
+      '<div class="card">'+
+        '<label class="datebox">Дата <input type="date" id="measDate" data-mdate="1" value="'+esc(m.d||"")+'"></label>'+
+        prevMeasBlock(curW);
+    for(var i=0;i<MEAS_FIELDS.length;i++){
+      var f = MEAS_FIELDS[i], v = m[f[0]]||"";
+      mh += '<div class="mrow"><span class="setlab">'+f[1]+'</span>'+
+        '<input inputmode="decimal" placeholder="'+f[2]+'" aria-label="'+f[1]+', '+f[2]+'" data-meas="'+f[0]+'" value="'+esc(v)+'" class="'+(v?"filled":"")+'"></div>';
+    }
+    mh += '<div class="muted" style="font-size:13px; margin-top:10px">Заміряй в один і той самий час доби — найкраще зранку натщесерце.</div>'+
+      '</div>'+ measHistory();
+    el.innerHTML = mh;
     return;
   }
   var wk = P[curW], day = wk.days[curD];
@@ -712,6 +799,18 @@ function renderPanel(){
       '<input class="exnote" placeholder="Нотатка (як пішло, техніка, біль...)" data-ex="'+i+'" data-note="1" value="'+esc(e&&e.n?e.n:"")+'"'+dis+'>'+
     '</div>';
   }
+  var run = cell.run || {km:"", surf:""};
+  h += '<div class="card">'+
+    '<div class="exname">🏃‍♀️ Пробіжка</div>'+
+    '<div class="exen">за бажанням — якщо бігала цього дня</div>'+
+    '<div class="runrow">'+
+      '<input inputmode="decimal" placeholder="км" aria-label="Дистанція, км" data-run="km" value="'+esc(run.km||"")+'" class="'+(run.km?"filled":"")+'"'+dis+'>'+
+      '<select data-run="surf" aria-label="Поверхня"'+dis+' class="'+(run.surf?"filled":"")+'">'+
+        '<option value="">— поверхня —</option>'+
+        RUN_SURFACES.map(function(s){ return '<option value="'+esc(s)+'"'+(run.surf===s?" selected":"")+'>'+esc(s)+'</option>'; }).join("")+
+      '</select>'+
+    '</div>'+
+  '</div>';
   if(locked){
     h += '</div>';
   } else {
@@ -733,10 +832,36 @@ $("days").addEventListener("click", function(ev){
   var b = ev.target.closest(".dtab"); if(!b) return;
   curD = +b.dataset.d; S.view=[curW,curD]; save(); renderAll();
 });
-$("panel").addEventListener("input", function(ev){
+function stampToday(c){
+  if(c.date) return;
+  var now = new Date();
+  c.date = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0");
+  var di = $("dayDate"); if(di) di.value = c.date;
+}
+function onPanelInput(ev){
   var t = ev.target;
+  /* Заміри тижня — на вкладці відпочинку, поза логікою локу днів */
+  if(t.dataset.mdate !== undefined){ getMeas(curW,true).d = t.value; save(); renderDays(); renderWeeks(); return; }
+  if(t.dataset.meas !== undefined){
+    var mm = getMeas(curW,true);
+    mm[t.dataset.meas] = t.value.trim();
+    t.classList.toggle("filled", !!t.value.trim());
+    if(!mm.d && t.value.trim()){
+      var nd = new Date();
+      mm.d = nd.getFullYear()+"-"+String(nd.getMonth()+1).padStart(2,"0")+"-"+String(nd.getDate()).padStart(2,"0");
+      var mdi = $("measDate"); if(mdi) mdi.value = mm.d;
+    }
+    save(); renderDays(); renderWeeks(); return;
+  }
   var cc = S.log[cellKey(curW,curD)];
   if(cc && cc.locked) return;
+  if(t.dataset.run !== undefined){
+    var r = getRun(curW,curD,true);
+    r[t.dataset.run] = t.value.trim();
+    t.classList.toggle("filled", !!t.value.trim());
+    stampToday(getCell(curW,curD,true));
+    save(); renderDays(); renderWeeks(); return;
+  }
   if(t.id === "dayDate"){ getCell(curW,curD,true).date = t.value; save(); return; }
   if(t.dataset.note){ getEx(curW,curD,+t.dataset.ex,true).n = t.value; save(); return; }
   if(t.dataset.f !== undefined && t.dataset.ex !== undefined){
@@ -751,7 +876,10 @@ $("panel").addEventListener("input", function(ev){
     }
     save();
   }
-});
+}
+$("panel").addEventListener("input", onPanelInput);
+/* select у Safari надсилає лише change */
+$("panel").addEventListener("change", onPanelInput);
 /* Подвійне натискання замість системного confirm() — вбудовані переглядачі його блокують */
 var armTimer = null;
 function armOrRun(btn, armedText, fn){
@@ -827,7 +955,33 @@ function buildTSV(){
         ]);
       }
     }
+    if(runHasData(en.c.run)){
+      rows.push([
+        en.c.date ? fmtDate(en.c.date) : "",
+        en.w+1,
+        DAY_META[en.d][0],
+        DAY_META[en.d][1],
+        "Пробіжка",
+        en.c.run.surf || "",
+        1,
+        "",
+        String(en.c.run.km||"").replace(".", ","),
+        ""
+      ]);
+    }
   });
+  return rows.map(function(r){
+    return r.map(function(x){ return String(x).replace(/[\t\n]/g," "); }).join("\t");
+  }).join("\n");
+}
+function buildMeasTSV(){
+  var rows = [["Тиждень","Дата","Вага (кг)","Талія (см)","Живіт (см)","Попа (см)","Нога (см)"]];
+  for(var w=0; w<12; w++){
+    var m = getMeas(w); if(!measHasData(m)) continue;
+    rows.push(["Т"+(w+1), m.d?fmtDate(m.d):""].concat(MEAS_FIELDS.map(function(f){
+      return String(m[f[0]]||"").replace(".", ",");
+    })));
+  }
   return rows.map(function(r){
     return r.map(function(x){ return String(x).replace(/[\t\n]/g," "); }).join("\t");
   }).join("\n");
@@ -848,6 +1002,11 @@ $("copyTsv").addEventListener("click", function(){
   var tsv = buildTSV();
   if(tsv.indexOf("\n") < 0){ toast("Поки що немає записів 🙂"); return; }
   copyText(tsv, "Журнал скопійовано ✓ Встав у таблицю (A1)");
+});
+$("copyMeas").addEventListener("click", function(){
+  var tsv = buildMeasTSV();
+  if(tsv.indexOf("\n") < 0){ toast("Поки що немає замірів 🙂"); return; }
+  copyText(tsv, "Заміри скопійовано ✓ Встав у таблицю (A1)");
 });
 $("expJson").addEventListener("click", function(){
   copyText(JSON.stringify(S), "Копію даних скопійовано ✓");
