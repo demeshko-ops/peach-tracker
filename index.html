@@ -302,7 +302,18 @@
         <button class="btn btn-b" id="restoreSheet">Відновити з таблиці</button>
       </div>
       <input class="exnote" id="sheetUrlInput" placeholder="Посилання на веб-додаток (https://script.google.com/macros/s/.../exec)" style="margin-top:9px">
-      <div class="muted" style="margin-top:6px">Після кожного збереженого тренування історія вивантажується в таблицю автоматично. Як підключити — 5 кроків у файлі <b>apps-script/README.md</b> у репозиторії.</div>
+      <div class="muted" style="margin-top:6px">Після кожного збереженого тренування історія вивантажується в таблицю автоматично.</div>
+      <details style="margin-top:10px">
+        <summary>Як підключити таблицю — 5 кроків</summary>
+        <ol style="padding-left:20px; font-size:13.5px; line-height:1.6">
+          <li>У своїй Google Таблиці відкрий меню <b>Розширення → Apps Script</b>.</li>
+          <li>Видали текст, який там уже є, і встав натомість код — кнопка нижче копіює його.</li>
+          <li><b>Розгорнути → Новий розгортання → Веб-додаток</b>. «Виконувати від імені» — <b>Я</b>, «Хто має доступ» — <b>Будь-хто</b>. Google попросить дозволи: <b>Додатково → Перейти до…</b></li>
+          <li>Скопіюй <b>URL веб-додатка</b> — він закінчується на <b>/exec</b>. Це НЕ посилання на саму таблицю.</li>
+          <li>Встав його в поле вище і натисни «Синхронізувати зараз».</li>
+        </ol>
+        <button class="btn btn-b" id="copyGs">📋 Скопіювати код скрипта</button>
+      </details>
     </details>
     <details>
       <summary>Резервна копія / перенесення на інший пристрій</summary>
@@ -1205,23 +1216,35 @@ function fmtSyncAt(iso){
   var p = function(x){ return String(x).padStart(2,"0"); };
   return p(d.getDate())+"."+p(d.getMonth()+1)+"."+d.getFullYear()+" "+p(d.getHours())+":"+p(d.getMinutes());
 }
+/* Приймає лише URL веб-додатка Apps Script — посилання на саму таблицю сюди не годиться */
+function isWebAppUrl(u){ return /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec/.test(String(u).trim()); }
+function urlHint(u){
+  return /docs\.google\.com\/spreadsheets/.test(u)
+    ? "Це посилання на саму таблицю. Потрібне посилання на веб-додаток — розгорни «Як підключити» нижче 👇"
+    : "Посилання має виглядати так: https://script.google.com/macros/s/…/exec";
+}
 function renderSyncStatus(){
   var el = $("syncStatus"); if(!el) return;
-  if(!(S.sheetUrl||"").trim()){ el.textContent = "Не підключено — встав посилання на веб-додаток нижче."; return; }
+  var url = (S.sheetUrl||"").trim();
+  if(!url){ el.textContent = "Не підключено — встав посилання на веб-додаток нижче."; return; }
+  if(!isWebAppUrl(url)){ el.textContent = "⚠️ "+urlHint(url); return; }
   if(S.syncPending){ el.textContent = "⚠️ Останню синхронізацію не завершено — натисни «Синхронізувати зараз»."; return; }
+  if(S.syncUnconfirmed){ el.textContent = "⚠️ Надіслано "+fmtSyncAt(S.syncAt)+", але таблиця не підтвердила запис. Перевір, чи зʼявились дані."; return; }
   el.textContent = S.syncAt ? "Востаннє синхронізовано: "+fmtSyncAt(S.syncAt) : "Підключено. Ще жодної синхронізації.";
 }
 function syncSheet(silent){
   var url = (S.sheetUrl||"").trim();
   if(!url){ if(!silent) toast("Спочатку встав посилання на веб-додаток"); return; }
+  if(!isWebAppUrl(url)){ renderSyncStatus(); if(!silent) toast(urlHint(url)); return; }
   var body = JSON.stringify(buildSyncPayload());
   if(!silent) toast("Надсилаю в таблицю…");
-  function ok(msg){
-    S.syncAt = new Date().toISOString(); S.syncPending = false; save(); renderSyncStatus();
+  function ok(msg, unconfirmed){
+    S.syncAt = new Date().toISOString(); S.syncPending = false; S.syncUnconfirmed = !!unconfirmed;
+    save(); renderSyncStatus();
     if(!silent) toast(msg);
   }
   function fail(){
-    S.syncPending = true; save(); renderSyncStatus();
+    S.syncPending = true; S.syncUnconfirmed = false; save(); renderSyncStatus();
     if(!silent) toast("Не вдалося надіслати — перевір посилання та інтернет");
   }
   fetch(url, { method:"POST", body:body })
@@ -1231,9 +1254,19 @@ function syncSheet(silent){
       else throw new Error(res && res.error ? res.error : "невідома відповідь");
     })
     .catch(function(){
-      /* Деякі браузери не дають прочитати відповідь Apps Script — надсилаємо без підтвердження */
+      /* Деякі браузери не дають прочитати відповідь Apps Script. Надсилаємо «наосліп»,
+         але одразу перевіряємо GET-ом, чи справді щось записалось — без цього легко
+         прийняти за успіх запит, який нікуди не дійшов. */
       fetch(url, { method:"POST", mode:"no-cors", body:body })
-        .then(function(){ ok("Надіслано в таблицю ✓"); })
+        .then(function(){
+          return fetch(url)
+            .then(function(r){ return r.json(); })
+            .then(function(res){
+              if(res && res.ok) ok("Дані в таблиці ✓");
+              else ok("Надіслано, але підтвердження немає", true);
+            })
+            .catch(function(){ ok("Надіслано, але підтвердження немає", true); });
+        })
         .catch(fail);
     });
 }
@@ -1283,12 +1316,23 @@ $("sheetUrlInput").addEventListener("input", function(){
   S.sheetUrl = this.value.trim(); save(); renderSyncStatus();
 });
 $("syncNow").addEventListener("click", function(){ syncSheet(false); });
+/* Код скрипта лежить поруч у репозиторії — беремо звідти, щоб він був в одному місці */
+$("copyGs").addEventListener("click", function(){
+  toast("Готую код…");
+  fetch(new URL("apps-script/Code.gs", location.href).href)
+    .then(function(r){ if(!r.ok) throw new Error("нема файлу"); return r.text(); })
+    .then(function(txt){ copyText(txt, "Код скопійовано ✓ Встав його в Apps Script"); })
+    .catch(function(){ toast("Не вдалося взяти код — відкрий apps-script/Code.gs у репозиторії"); });
+});
 $("restoreSheet").addEventListener("click", function(ev){
   var url = (S.sheetUrl||"").trim();
   if(!url){ toast("Спочатку встав посилання на веб-додаток"); return; }
+  if(!isWebAppUrl(url)){ renderSyncStatus(); toast(urlHint(url)); return; }
   armOrRun(ev.target, "Замінити дані на пристрої тими, що в таблиці? Натисни ще раз", function(){
     toast("Завантажую з таблиці…");
-    fetch(url).then(function(r){ return r.json(); }).then(function(res){
+    fetch(url).then(function(r){
+      return r.json().catch(function(){ throw new Error("посилання веде не на веб-додаток Apps Script"); });
+    }).then(function(res){
       if(!res || !res.ok) throw new Error(res && res.error ? res.error : "порожня відповідь");
       var s = JSON.parse(res.data);
       if(!s || !s.log) throw new Error("копія пошкоджена");
