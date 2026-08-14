@@ -4,21 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#2E3134">
+<meta name="theme-color" content="#B7B2AA">
 <title>The Peach Lab — Трекер тренувань</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍑</text></svg>">
 </head>
 <body>
 <style>
-  /* Тема «мокрий асфальт»: єдина палітра, не залежить від системної теми */
+  /* Тема «поглядовий бетон»: єдина палітра, не залежить від системної теми */
   :root{
-    --bg:#2E3134; --surface:rgba(255,255,255,.07); --surface2:rgba(244,143,184,.13);
-    --ink:#FBF7F8; --muted:#C7B4BE;
-    --accent:#FF9C63; --accent-ink:#FFB27F; --accent-soft:rgba(255,156,99,.22); --accent-soft2:rgba(255,156,99,.12);
-    --line:rgba(255,255,255,.16); --done:#97CBA5; --done-soft:rgba(151,203,165,.18);
-    --chip:rgba(255,255,255,.11); --on-accent:#2A1509;
-    --lotus:#F48FB8; --lotus-soft:rgba(244,143,184,.18);
-    --shadow:0 6px 18px rgba(0,0,0,.35), inset 0 0 36px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.12);
+    --bg:#B7B2AA; --surface:#FFFFFF; --surface2:#F6E4EC; --ink:#372E33; --muted:#82727A;
+    --accent:#E8875B; --accent-ink:#C05F35; --accent-soft:#FADFCE; --accent-soft2:#FCEEE4;
+    --line:#D9CFC9; --done:#6FA07C; --done-soft:#E4EFE7; --chip:#F0E2E8; --on-accent:#FFFFFF;
+    --lotus:#C9718F; --lotus-soft:#F6DFE8; --shadow:0 2px 8px rgba(56,46,41,.22);
   }
   *{box-sizing:border-box}
   body{
@@ -110,43 +107,32 @@
   .locked input{opacity:.75}
   @media (max-width:420px){ .setrow{grid-template-columns:60px 1fr 1fr} }
 
-  /* ==== ТЕМА «МОКРИЙ АСФАЛЬТ»: фон, скляні картки з віньєткою, персик/лотос ==== */
+  /* ==== ТЕМА «ПОГЛЯДОВИЙ БЕТОН»: панелі опалубки, отвори від стяжок, персик і лотос ==== */
   body{
-    background-color:#2E3134;
+    background-color:#B7B2AA;
     background-image:
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='2' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.9 0 0 0 0 0.9 0 0 0 0 0.92 0.10 0 0 0 -0.03'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23g)'/%3E%3C/svg%3E"),
-      radial-gradient(900px 600px at 20% 0%, rgba(255,158,99,.08), transparent 60%),
-      radial-gradient(800px 700px at 95% 100%, rgba(244,143,184,.07), transparent 60%),
-      radial-gradient(1200px 900px at 50% 45%, rgba(255,255,255,.03), transparent 70%);
-    background-size:200px 200px, 100% 100%, 100% 100%, 100% 100%;
-    background-repeat:repeat, no-repeat, no-repeat, no-repeat;
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' seed='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.38 0 0 0 0 0.36 0 0 0 0 0.34 0.55 0 0 0 -0.08'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23g)'/%3E%3C/svg%3E"),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='640'%3E%3Cfilter id='b'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.011 0.017' numOctaves='4' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.33 0 0 0 0 0.31 0 0 0 0 0.29 0.85 0 0 0 -0.22'/%3E%3C/filter%3E%3Crect width='640' height='640' filter='url(%23b)'/%3E%3C/svg%3E"),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='700' height='700'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.009 0.013' numOctaves='3' seed='23' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.93 0 0 0 0 0.92 0 0 0 0 0.90 0.7 0 0 0 -0.28'/%3E%3C/filter%3E%3Crect width='700' height='700' filter='url(%23w)'/%3E%3C/svg%3E"),
+      radial-gradient(circle at 50% 208px, rgba(38,32,29,.42) 0 3.8px, rgba(25,21,19,.22) 4.6px, rgba(255,255,255,.38) 5.4px 6.6px, transparent 8px),
+      linear-gradient(178deg, transparent 0 11%, rgba(76,68,62,.06) 12% 14.5%, transparent 15.5% 41%, rgba(76,68,62,.05) 42% 44%, transparent 45% 70%, rgba(255,255,255,.06) 71% 73.5%, transparent 74.5%),
+      linear-gradient(90deg, transparent 0 33.15%, rgba(52,45,40,.16) 33.15% 33.55%, rgba(255,255,255,.30) 33.55% 33.85%, transparent 33.85% 66.35%, rgba(52,45,40,.16) 66.35% 66.75%, rgba(255,255,255,.30) 66.75% 67.05%, transparent 67.05%),
+      repeating-linear-gradient(180deg, transparent 0 414px, rgba(52,45,40,.15) 414px 417px, rgba(255,255,255,.32) 417px 420px),
+      radial-gradient(1100px 750px at 15% 6%, rgba(255,255,255,.30), transparent 60%),
+      radial-gradient(1000px 850px at 90% 95%, rgba(52,45,40,.16), transparent 62%);
+    background-size:220px 220px, 640px 640px, 700px 700px, 50% 420px, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+    background-repeat:repeat, repeat, repeat, repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat;
   }
-  .card, .intro, .syncbox{
-    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
-    background:radial-gradient(130% 115% at 50% 0%, rgba(255,255,255,.115), rgba(255,255,255,.05) 48%, rgba(8,8,10,.14) 100%);
-    border-color:rgba(255,255,255,.17);
-  }
-  .intro{background:radial-gradient(130% 115% at 50% 0%, rgba(244,143,184,.20), rgba(244,143,184,.08) 55%, rgba(8,8,10,.12) 100%); box-shadow:inset 0 0 30px rgba(0,0,0,.22)}
-  .weekbar{background:rgba(40,43,46,.70); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border-bottom-color:rgba(255,255,255,.10)}
-  .wchip, .dtab{background:rgba(255,255,255,.08)}
-  .wchip.on{background:var(--accent); border-color:var(--accent); color:var(--on-accent)}
-  .dtab.on{background:var(--accent-soft); border-color:var(--accent)}
-  .dtab .dm{color:#CDBAC4}
-  .setrow input, .exnote, .datebox input, .mrow input, .runrow input, .runrow select{background:rgba(0,0,0,.28); border-color:rgba(255,255,255,.17); color:var(--ink)}
-  .setrow input.filled, .mrow input.filled, .runrow input.filled, .runrow select.filled{background:var(--done-soft); border-color:rgba(151,203,165,.60)}
-  .setrow input::placeholder, .exnote::placeholder, .mrow input::placeholder, .runrow input::placeholder{color:rgba(251,247,248,.38)}
-  .runrow select option{background:#2E3134; color:#FBF7F8}
-  .histrow .hw{color:#CDBAC4}
-  .setlab{color:#CDBAC4}
-  .m{color:#F2E7EC}
-  .prev{display:block; background:var(--lotus-soft); color:#F9BFD8; border-radius:10px; padding:6px 10px; border:1px solid rgba(244,143,184,.28)}
-  .prev b{color:#FFDCEB}
-  .exen{color:var(--lotus); font-weight:600}
-  .plannote{color:#FFBE93; background:var(--accent-soft2); border:1px solid rgba(255,156,99,.30)}
-  .finishbtn{background:linear-gradient(135deg,#FF9C63,#F48FB8); color:#2A1216}
-  .eyebrow{color:var(--accent)}
-  .sub, .datebox{color:#C7B4BE}
-  .datebox input::-webkit-calendar-picker-indicator{filter:invert(1) opacity(.75)}
+  .weekbar{background:rgba(183,178,170,.72); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border-bottom-color:rgba(96,86,80,.32)}
+  .wchip, .dtab{background:rgba(255,255,255,.90)}
+  .wchip.on{background:var(--accent); border-color:var(--accent)}
+  .dtab.on{background:var(--accent-soft2); border-color:var(--accent)}
+  .setrow input, .exnote, .datebox input, .mrow input, .runrow input, .runrow select{background:#FAF5F1}
+  .prev{display:block; background:var(--lotus-soft); color:#84556A; border-radius:10px; padding:6px 10px}
+  .prev b{color:#6E3F55}
+  .exen{color:var(--lotus)}
+  .intro{background:rgba(246,228,236,.92)}
+  .card{border-color:rgba(120,108,100,.22)}
 </style>
 
 <div class="wrap">
