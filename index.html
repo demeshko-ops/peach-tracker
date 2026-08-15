@@ -318,11 +318,19 @@
     <details>
       <summary>Резервна копія / перенесення на інший пристрій</summary>
       <div class="btnrow" style="margin-top:8px">
-        <button class="btn btn-b" id="expJson">Скопіювати копію даних</button>
-        <button class="btn btn-b" id="impJson">Відновити з копії</button>
+        <button class="btn btn-a" id="saveFile">💾 Зберегти копію файлом</button>
+        <button class="btn btn-b" id="loadFile">📂 Відновити з файлу</button>
       </div>
-      <textarea class="io" id="ioArea" placeholder="Для відновлення: встав сюди збережену копію даних і натисни «Відновити з копії»."></textarea>
-      <div class="muted">Щоб перенести журнал на інший пристрій — скопіюй копію тут і віднови її там.</div>
+      <input type="file" id="fileInput" accept="application/json,.json" style="display:none">
+      <div class="muted" style="margin-top:6px">Файл лягає в «Файли» / «Завантаження» на телефоні — його видно, можна переслати собі в чат чи на інший пристрій і відновити там.</div>
+      <details style="margin-top:10px">
+        <summary>Копія через буфер обміну</summary>
+        <div class="btnrow" style="margin-top:8px">
+          <button class="btn btn-b" id="expJson">Скопіювати копію даних</button>
+          <button class="btn btn-b" id="impJson">Відновити з копії</button>
+        </div>
+        <textarea class="io" id="ioArea" placeholder="Для відновлення: встав сюди збережену копію даних і натисни «Відновити з копії»."></textarea>
+      </details>
     </details>
     <details>
       <summary>Експорт журналу (для аналізу та графіків)</summary>
@@ -1297,6 +1305,58 @@ $("copyMeas").addEventListener("click", function(){
   var tsv = buildMeasTSV();
   if(tsv.indexOf("\n") < 0){ toast("Поки що немає замірів 🙂"); return; }
   copyText(tsv, "Заміри скопійовано ✓ Встав у таблицю (A1)");
+});
+/* Файл-копія: надійніше за буфер обміну — файл видно, він лишається на пристрої */
+$("saveFile").addEventListener("click", function(){
+  try{
+    var now = new Date();
+    var stamp = now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0");
+    var blob = new Blob([JSON.stringify(S)], {type:"application/json"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = "peach-lab-"+stamp+".json";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    toast("Копію збережено файлом ✓");
+  }catch(e){
+    toast("Не вдалося зберегти файл — скористайся копією через буфер");
+  }
+});
+/* Кнопка подвійного призначення: перше натискання відкриває файл,
+   а коли файл прочитано — вона ж підтверджує заміну (той самий патерн, що й armOrRun). */
+var pendingRestore = null, restoreTimer = null;
+function resetRestoreBtn(){
+  pendingRestore = null; clearTimeout(restoreTimer);
+  $("loadFile").textContent = "📂 Відновити з файлу";
+}
+$("loadFile").addEventListener("click", function(){
+  if(pendingRestore){
+    var s = pendingRestore;
+    resetRestoreBtn();
+    S = s; save();
+    curW = (S.view&&S.view[0])||0; curD = (S.view&&S.view[1])||0;
+    $("sheetUrlInput").value = S.sheetUrl || "";
+    renderAll(); renderSyncStatus(); toast("Дані відновлено з файлу ✓");
+    return;
+  }
+  $("fileInput").click();
+});
+$("fileInput").addEventListener("change", function(){
+  var f = this.files && this.files[0];
+  this.value = "";                       /* щоб той самий файл можна було обрати вдруге */
+  if(!f) return;
+  var rd = new FileReader();
+  rd.onerror = function(){ resetRestoreBtn(); toast("Не вдалося прочитати файл"); };
+  rd.onload = function(){
+    var s;
+    try{ s = JSON.parse(rd.result); }catch(e){ resetRestoreBtn(); toast("Це не файл копії 🤔"); return; }
+    if(!s || !s.log){ resetRestoreBtn(); toast("У файлі немає журналу тренувань"); return; }
+    pendingRestore = s;
+    $("loadFile").textContent = "Замінити дані ("+Object.keys(s.log).length+" трен.)? Натисни ще раз";
+    clearTimeout(restoreTimer);
+    restoreTimer = setTimeout(resetRestoreBtn, 8000);
+  };
+  rd.readAsText(f);
 });
 $("expJson").addEventListener("click", function(){
   copyText(JSON.stringify(S), "Копію даних скопійовано ✓");
