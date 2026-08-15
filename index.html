@@ -95,6 +95,11 @@
   details li{margin:4px 0}
   .muted{color:var(--muted)}
   textarea.io{width:100%; height:90px; margin-top:8px; border:1px solid var(--line); border-radius:10px; background:var(--bg); color:var(--ink); font:13px/1.4 ui-monospace,Menlo,Consolas,monospace; padding:8px}
+  .pullbar{position:fixed; left:12px; right:12px; bottom:14px; z-index:60; display:none; max-width:736px; margin:0 auto;
+    background:var(--bg); border:1px solid var(--accent); border-radius:14px; padding:13px 15px; font-size:14px; box-shadow:0 8px 24px rgba(0,0,0,.4)}
+  .pullbar.show{display:block}
+  .pullbar .pb-actions{display:flex; gap:8px; margin-top:11px; flex-wrap:wrap}
+  .pullbar .pb-warn{color:var(--accent-ink); font-weight:600}
   .toast{position:fixed; left:50%; transform:translateX(-50%); bottom:18px; background:var(--ink); color:var(--bg);
     padding:10px 18px; border-radius:999px; font-size:14px; font-weight:600; opacity:0; pointer-events:none; transition:opacity .25s; z-index:50}
   .toast.show{opacity:1}
@@ -340,6 +345,14 @@
       </div>
       <div class="muted">Копіює всі записи у табличному форматі — знадобиться наприкінці програми для графіків прогресу.</div>
     </details>
+  </div>
+</div>
+
+<div class="pullbar" id="pullBar">
+  <div id="pullText"></div>
+  <div class="pb-actions">
+    <button class="btn btn-a" id="pullYes">Завантажити сюди</button>
+    <button class="btn btn-b" id="pullNo">Не треба</button>
   </div>
 </div>
 
@@ -722,14 +735,20 @@ function canonEx(en){ return EX_CANON[en] || en; }
 
 /* ==== СТАН ==== */
 var LS_KEY = "peachlab_v1";
+/* Веб-додаток таблиці за замовчуванням — щоб на будь-якому пристрої трекер
+   був підключений одразу, без пошуку посилання. Замінюється в полі внизу сторінки. */
+var DEFAULT_SHEET_URL = "https://script.google.com/macros/s/AKfycbzTL2q3kj-MDmLqqc80T8AGZCgK8KCI9g7twvqOcScc3iwL41Bm3nPblbPvltB5Ji40kA/exec";
 var STORAGE_OK = true;
 try{ localStorage.setItem("plab_probe","1"); localStorage.removeItem("plab_probe"); }catch(e){ STORAGE_OK = false; }
 var S = load();
 function load(){
-  try{ var s = JSON.parse(localStorage.getItem(LS_KEY)); if(s && s.log) return s; }catch(e){}
-  return {log:{}, sheetUrl:"", view:[0,0]};
+  try{
+    var s = JSON.parse(localStorage.getItem(LS_KEY));
+    if(s && s.log){ if(!s.sheetUrl) s.sheetUrl = DEFAULT_SHEET_URL; return s; }
+  }catch(e){}
+  return {log:{}, sheetUrl:DEFAULT_SHEET_URL, view:[0,0]};
 }
-function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }catch(e){} }
+function save(){ try{ S.updatedAt = new Date().toISOString(); localStorage.setItem(LS_KEY, JSON.stringify(S)); }catch(e){} }
 function cellKey(w,d){ return w+"-"+d; }
 function getCell(w,d,make){
   var k = cellKey(w,d);
@@ -1215,6 +1234,8 @@ function buildSyncPayload(){
     progress.rows.push(row);
   });
 
+  /* Мітка часу потрібна іншим пристроям, щоб зрозуміти, де свіжіші дані */
+  if(!S.updatedAt) S.updatedAt = new Date().toISOString();
   return { journal:journal, weeks:weeks, meas:meas, progress:progress, backup:JSON.stringify(S) };
 }
 function fmtSyncAt(iso){
@@ -1406,7 +1427,40 @@ $("restoreSheet").addEventListener("click", function(ev){
     });
   });
 });
+/* Багато пристроїв: при відкритті дивимось, чи в таблиці не свіжіші дані.
+   Ніколи не підміняємо автоматично — лише пропонуємо, показавши обидві кількості. */
+var remoteState = null;
+function logCount(st){ try{ return Object.keys(st.log||{}).length; }catch(e){ return 0; } }
+function checkRemote(){
+  var url = (S.sheetUrl||"").trim();
+  if(!isWebAppUrl(url)) return;
+  fetch(url).then(function(r){ return r.json(); }).then(function(res){
+    if(!res || !res.ok || !res.data) return;
+    var rem;
+    try{ rem = JSON.parse(res.data); }catch(e){ return; }
+    if(!rem || !rem.log || !rem.updatedAt) return;
+    if(S.updatedAt && rem.updatedAt <= S.updatedAt) return;   /* тут свіжіше або те саме */
+    remoteState = rem;
+    var rc = logCount(rem), lc = logCount(S);
+    $("pullText").innerHTML = "☁️ У таблиці свіжіші дані від <b>"+esc(fmtSyncAt(rem.updatedAt))+"</b><br>"+
+      "там тренувань: <b>"+rc+"</b>, тут: <b>"+lc+"</b>"+
+      (rc < lc ? '<br><span class="pb-warn">⚠️ У таблиці МЕНШЕ записів — завантаживши, ти втратиш різницю.</span>' : "");
+    $("pullBar").classList.add("show");
+  }).catch(function(){});
+}
+$("pullNo").addEventListener("click", function(){ $("pullBar").classList.remove("show"); remoteState = null; });
+$("pullYes").addEventListener("click", function(ev){
+  if(!remoteState) return;
+  armOrRun(ev.target, "Замінити дані тут? Ще раз", function(){
+    S = remoteState; remoteState = null; save();
+    curW = (S.view&&S.view[0])||0; curD = (S.view&&S.view[1])||0;
+    $("sheetUrlInput").value = S.sheetUrl || "";
+    $("pullBar").classList.remove("show");
+    renderAll(); renderSyncStatus(); toast("Дані з таблиці завантажено ✓");
+  });
+});
 renderSyncStatus();
+setTimeout(checkRemote, 800);
 if(S.syncPending) syncSoon();
 if(!STORAGE_OK){
   var warn = document.createElement("div");
